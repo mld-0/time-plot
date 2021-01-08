@@ -1,0 +1,8 @@
+pytest
+argcomplete
+pandas
+freezegun
+pytz
+tzlocal
+dateparser
+matplotlib
