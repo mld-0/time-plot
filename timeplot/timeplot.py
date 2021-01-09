@@ -46,48 +46,86 @@ class TimePlot(object):
     #def CalculateFromFilesRange_Monthly(self, arg_dt_list, arg_data_dir, arg_halflife, arg_onset, arg_file_prefix, arg_file_postfix):
     #    pass
 
-    #   As per Analyse Month, for all days between first and last date in input
-    def AnalyseDataAll(self):
+    #   About: As per Analyse Month, for all days between arg_date_start and arg_date_end
+    def AnalyseDataRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
         pass
 
-    #   About: As per Analyse Month, for all days between arg_date_start and arg_date_end
-    def AnalyseDataRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim):
-        #located_filepaths = self._GetAvailableFiles_Monthly(self._data_dir, self.prefix, self.postfix)
-        #dt_first, dt_last = self.timeplot._GetDatetimesFirstAndLast_FromFileList(located_filepaths, self.col_dt, self.delim)
-        pass
+        if (isinstance(arg_date_start, str)):
+            arg_date_start = dateparser.parse(arg_date_start)
+        if (isinstance(arg_date_end, str)):
+            arg_date_end = dateparser.parse(arg_date_end)
+
+        _log.debug("arg_date_start=(%s)" % str(arg_date_start))
+        _log.debug("arg_date_end=(%s)" % str(arg_date_end))
+        located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        #_log.debug("located_filepaths=(%s)" % str(located_filepaths))
+
+        #   Continue: 2021-01-09T19:17:44AEDT Get list of months between arg_date_start, arg_date_end, and call self.AnalyseMonth() for each
+        months_list = []
+        loop_date = arg_date_start
+        while loop_date <= arg_date_end:
+            months_list.append(loop_date.strftime("%Y-%m"))
+            loop_date += relativedelta(months=1)
+        _log.debug("months_list=(%s)" % str(months_list))
+
+        for loop_month in months_list:
+            self.AnalyseMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, loop_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+        
+
+
+    #   As per Analyse Month, for all days between first and last date in input
+    def AnalyseDataAll(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+        located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        #self._data_dir, self.prefix, self.postfix)
+        #_log.debug("located_filepaths=(%s)" % str(located_filepaths))
+        dt_first, dt_last = self._GetDatetimesFirstAndLast_FromFileList(located_filepaths, arg_col_dt, arg_col_delim)
+        #_log.debug("dt_first=(%s), dt_last=(%s)" % (str(dt_first), str(dt_last)))
+        return self.AnalyseDataRange(arg_data_dir, arg_file_prefix, arg_file_postfix, dt_first, dt_last, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
 
     def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
-
         if (isinstance(arg_date_month, str)):
             arg_date_month = dateparser.parse(arg_date_month)
             arg_date_month = arg_date_month.replace(day=1)
-
-        _now = datetime.datetime.now()
-
-        _log.debug("arg_data_dir=(%s)" % str(arg_data_dir))
-        _log.debug("arg_file_prefix=(%s)" % str(arg_file_prefix))
-        _log.debug("arg_file_postfix=(%s)" % str(arg_file_postfix))
-        _log.debug("arg_date_month=(%s)" % str(arg_date_month))
-        _log.debug("arg_labels_list=(%s)" % str(arg_labels_list))
-        _log.debug("arg_halflives_list=(%s)" % str(arg_halflives_list))
-        _log.debug("arg_onset_lists=(%s)" % str(arg_onset_lists))
-        _log.debug("flag_restrictFuture=(%s)" % str(flag_restrictFuture))
-        _log.debug("_now=(%s)" % str(_now))
-        #   Get filepaths for arg_date_month
-        #located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
-        located_filepaths = self._GetFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_date_month, True)
-
+        #_now = datetime.datetime.now()
         #   For month of arg_date_month, get days_list
         y = arg_date_month.year
         m = arg_date_month.month
         days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
         #_log.debug("days_list=(%s)" % str(days_list))
-        _log.debug("days_list=(%s)" % str(days_list))
+        return self.AnalyseDayRange(arg_data_dir, arg_file_prefix, arg_file_postfix, days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+
+
+
+    def AnalyseDayRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #   {{{
+        _now = datetime.datetime.now()
+        _log.debug("arg_data_dir=(%s)" % str(arg_data_dir))
+        _log.debug("arg_file_prefix=(%s)" % str(arg_file_prefix))
+        _log.debug("arg_file_postfix=(%s)" % str(arg_file_postfix))
+        _log.debug("arg_days_list=(%s)" % str(arg_days_list))
+        _log.debug("arg_labels_list=(%s)" % str(arg_labels_list))
+        _log.debug("arg_halflives_list=(%s)" % str(arg_halflives_list))
+        _log.debug("arg_onset_lists=(%s)" % str(arg_onset_lists))
+        _log.debug("flag_restrictFuture=(%s)" % str(flag_restrictFuture))
+        _log.debug("_now=(%s)" % str(_now))
+
+        ##   Get filepaths for arg_date_month
+        ##located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        ##   For month of arg_date_month, get days_list
+        #y = arg_date_month.year
+        #m = arg_date_month.month
+        #arg_days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
+        ##_log.debug("days_list=(%s)" % str(days_list))
+        _log.debug("arg_days_list=(%s)" % str(arg_days_list))
+
+        located_filepaths = self._GetFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list[0], arg_days_list[-1], True)
+        #located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+
         #   For loop_date in days_list, get results_dt and results_qty lists for each label, and plot together for said day
         result_dt = []
         results_qtys = []
 
-        #results_dt, results_qty = self.timeplot._ReadData(located_filepaths, self.label, self.col_dt, self.col_qty, self.col_label, self.delim)
         labels_list = []
         data_dt_list = dict()
         data_qty_list = dict()
@@ -99,7 +137,7 @@ class TimePlot(object):
             #data_qty_list = data_qty_list + loop_data_qty_list
 
         #for loop_day, loop_halflife, loop_onset  in zip(days_list, arg_halflives_list, arg_onset_lists):
-        for loop_day in days_list:
+        for loop_day in arg_days_list:
             loop_day_date = dateparser.parse(loop_day)
             _log.debug("loop_day=(%s)" % str(loop_day))
             #_log.debug("loop_day_date=(%s)" % str(loop_day_date))
@@ -128,6 +166,7 @@ class TimePlot(object):
 
             #   Continue: 2021-01-08T23:41:01AEDT results are loop_result_qty_list for each of arg_labels_list, plot this data for each day i.e: loop itteration
             self.PlotResultsItemsForDay(loop_result_dt_list, loop_result_qty_list, loop_result_labels_list, arg_output_dir, loop_day, arg_color_options, True)
+    #   }}}
 
 
     #   About: Get a sorted list of the files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix' 
@@ -201,21 +240,23 @@ class TimePlot(object):
         return arg_dt_str
     #   }}}
 
-    def align_yaxis_np(self, axes): 
-        import numpy as np
-        y_lims = np.array([ax.get_ylim() for ax in axes])
-        # force 0 to appear on all axes, comment if don't need
-        y_lims[:, 0] = y_lims[:, 0].clip(None, 0)
-        y_lims[:, 1] = y_lims[:, 1].clip(0, None)
-        # normalize all axes
-        y_mags = (y_lims[:,1] - y_lims[:,0]).reshape(len(y_lims),1)
-        y_lims_normalized = y_lims / y_mags
-        # find combined range
-        y_new_lims_normalized = np.array([np.min(y_lims_normalized), np.max(y_lims_normalized)])
-        # denormalize combined range to get new axes
-        new_lims = y_new_lims_normalized * y_mags
-        for i, ax in enumerate(axes):
-            ax.set_ylim(new_lims[i])    
+    #def align_yaxis_np(self, axes): 
+    ##   {{{
+    #    import numpy as np
+    #    y_lims = np.array([ax.get_ylim() for ax in axes])
+    #    # force 0 to appear on all axes, comment if don't need
+    #    y_lims[:, 0] = y_lims[:, 0].clip(None, 0)
+    #    y_lims[:, 1] = y_lims[:, 1].clip(0, None)
+    #    # normalize all axes
+    #    y_mags = (y_lims[:,1] - y_lims[:,0]).reshape(len(y_lims),1)
+    #    y_lims_normalized = y_lims / y_mags
+    #    # find combined range
+    #    y_new_lims_normalized = np.array([np.min(y_lims_normalized), np.max(y_lims_normalized)])
+    #    # denormalize combined range to get new axes
+    #    new_lims = y_new_lims_normalized * y_mags
+    #    for i, ax in enumerate(axes):
+    #        ax.set_ylim(new_lims[i])    
+    ##   }}}
 
     #def align_yaxis_np(self, axes):
     ##   {{{
@@ -266,7 +307,9 @@ class TimePlot(object):
     ##   }}}
 
 
+    #   TODO: 2021-01-09T20:15:30AEDT do not save plot unless at least one _found_gtZero is True
     def PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
+    #   {{{
         _log.debug("arg_output_dir=(%s)" % str(arg_output_dir))
         _log.debug("arg_output_fname=(%s)" % str(arg_output_fname))
         #   Remove timezone from datetimes (so they appear correctly on plot)
@@ -281,6 +324,7 @@ class TimePlot(object):
         ax.set_xlabel('time')
         myFmt = DateFormatter("%H")
         #ax.xaxis.set_major_formatter(myFmt)
+        _flag_savePlot = False
 
         #   Setup axis list, one axis for each non-zero list in arg_result_qty_list
         ax_list = [ ]
@@ -308,6 +352,7 @@ class TimePlot(object):
             for loop_qty_value in loop_qty_list:
                 if (loop_qty_value > 0):
                     _found_gtZero = True
+                    _flag_savePlot = True
                     break
             if (_found_gtZero):
                 loop_ax.set_ylabel(loop_label, color=loop_color)
@@ -315,14 +360,32 @@ class TimePlot(object):
                 loop_ax.set_xlim(arg_result_dt_noTZ[0], arg_result_dt_noTZ[-1])
                 loop_ax.tick_params(axis='y', labelcolor=loop_color)
                 loop_ax.plot(arg_result_dt_noTZ, loop_qty_list, color=loop_color)
-                #ax_list[-1].xaxis.set_major_locator(MultipleLocator((1/24)))
-                #ax_list[-1].yaxis.set_minor_locator(AutoMinorLocator(1))
+                loop_ax.xaxis.set_major_locator(MultipleLocator((1/24)))
+                loop_ax.yaxis.set_minor_locator(AutoMinorLocator(1))
 
-        #   if arg_markNow, and current time is on plot, include point/line <on first/last> plot line
+                #   if arg_markNow, and current time is on plot, include point/line <on first/last> plot line
+                _now = datetime.datetime.now()
+                if (arg_markNow) and (_now > arg_result_dt_noTZ[0] and _now < arg_result_dt_noTZ[-1]):
+                    _now_y = 1
+                    _log.debug("mark _now=(%s)" % str(_now))
+                    for loop_dt, loop_qty in zip(arg_result_dt_noTZ, loop_qty_list):
+                        #if (_now < arg_result_dt_noTZ[0] and _now > arg_result_dt_noTZ[-1]):
+                        if (loop_dt >= _now):
+                            _now_y = loop_qty
+                            _log.debug("loop_label=(%s)" % str(loop_label))
+                            _log.debug("_now_y=(%s)" % str(_now_y))
+                            #_log.debug("loop_qty_list=(%s)" % str(loop_qty_list))
+                            break
+                    loop_ax.plot([_now], [_now_y], marker='o', markersize=3, color=loop_color)
+
         fig.tight_layout()
         fig.autofmt_xdate()
         #self.align_yaxis_np(ax_list)
-        plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
+        if (_flag_savePlot):
+            plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
+        else:
+            _log.warning("_flag_savePlot=(%s), skip save" % str(_flag_savePlot))
+        #   }}}
 
     #   About: plot datetimes and corresponding quantities, and save to given dir with given filename. If current datetime is in datetime range, mark it on plot
     def _PlotResultsForDay(self, arg_result_dt, arg_result_qty, arg_output_dir=None, arg_output_fname=None, arg_markNow=False):
