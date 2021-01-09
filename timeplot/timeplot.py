@@ -24,7 +24,9 @@ from io import StringIO
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #   }}}1
+import calendar
 from decaycalc.decaycalc import DecayCalc
 #   {{{2
 _log = logging.getLogger('decaycalc')
@@ -34,13 +36,99 @@ logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_loggin
 
 class TimePlot(object):
 
+    decaycalc = DecayCalc()
+
+    default_color_options = [ 'tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple' ]
+
+
     #   Continue: 2021-01-03T17:17:49AEST function, for a given month, and a given list of log labels, read all log data for that month, and previous month, then calculate and plot quantities for all given label item for each day in that month
     ##   Given <arguments>, (call methods to) get lists of data from file(s) in arg_data_dir, and return list of calculated qtys remaining for each datetime in arg_dt_list 
     #def CalculateFromFilesRange_Monthly(self, arg_dt_list, arg_data_dir, arg_halflife, arg_onset, arg_file_prefix, arg_file_postfix):
     #    pass
 
-    def AnalyseDataRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists):
+    #   As per Analyse Month, for all days between first and last date in input
+    def AnalyseDataAll(self):
         pass
+
+    #   About: As per Analyse Month, for all days between arg_date_start and arg_date_end
+    def AnalyseDataRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim):
+        #located_filepaths = self._GetAvailableFiles_Monthly(self._data_dir, self.prefix, self.postfix)
+        #dt_first, dt_last = self.timeplot._GetDatetimesFirstAndLast_FromFileList(located_filepaths, self.col_dt, self.delim)
+        pass
+
+    def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+
+        if (isinstance(arg_date_month, str)):
+            arg_date_month = dateparser.parse(arg_date_month)
+            arg_date_month = arg_date_month.replace(day=1)
+
+        _now = datetime.datetime.now()
+
+        _log.debug("arg_data_dir=(%s)" % str(arg_data_dir))
+        _log.debug("arg_file_prefix=(%s)" % str(arg_file_prefix))
+        _log.debug("arg_file_postfix=(%s)" % str(arg_file_postfix))
+        _log.debug("arg_date_month=(%s)" % str(arg_date_month))
+        _log.debug("arg_labels_list=(%s)" % str(arg_labels_list))
+        _log.debug("arg_halflives_list=(%s)" % str(arg_halflives_list))
+        _log.debug("arg_onset_lists=(%s)" % str(arg_onset_lists))
+        _log.debug("flag_restrictFuture=(%s)" % str(flag_restrictFuture))
+        _log.debug("_now=(%s)" % str(_now))
+        #   Get filepaths for arg_date_month
+        #located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        located_filepaths = self._GetFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_date_month, True)
+
+        #   For month of arg_date_month, get days_list
+        y = arg_date_month.year
+        m = arg_date_month.month
+        days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
+        #_log.debug("days_list=(%s)" % str(days_list))
+        _log.debug("days_list=(%s)" % str(days_list))
+        #   For loop_date in days_list, get results_dt and results_qty lists for each label, and plot together for said day
+        result_dt = []
+        results_qtys = []
+
+        #results_dt, results_qty = self.timeplot._ReadData(located_filepaths, self.label, self.col_dt, self.col_qty, self.col_label, self.delim)
+        labels_list = []
+        data_dt_list = dict()
+        data_qty_list = dict()
+        for loop_label in arg_labels_list:
+            loop_data_dt_list, loop_data_qty_list = self._ReadData(located_filepaths, loop_label, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim)
+            data_dt_list[loop_label] = loop_data_dt_list
+            data_qty_list[loop_label] = loop_data_qty_list
+            #data_dt_list = data_dt_list + loop_data_dt_list
+            #data_qty_list = data_qty_list + loop_data_qty_list
+
+        #for loop_day, loop_halflife, loop_onset  in zip(days_list, arg_halflives_list, arg_onset_lists):
+        for loop_day in days_list:
+            loop_day_date = dateparser.parse(loop_day)
+            _log.debug("loop_day=(%s)" % str(loop_day))
+            #_log.debug("loop_day_date=(%s)" % str(loop_day_date))
+            if (flag_restrictFuture) and (_now < loop_day_date):
+                _log.debug("restrictFuture, break")
+                break
+            loop_result_dt_list = []
+            loop_result_labels_list = []
+            loop_result_qty_list = []
+            #for loop_i, loop_label in enumerate(arg_labels_list):
+            for loop_label, loop_halflife, loop_onset in zip(arg_labels_list, arg_halflives_list, arg_onset_lists):
+                _log.debug("loop_label=(%s), loop_halflife=(%s), loop_onset=(%s)" % (str(loop_label), str(loop_halflife), str(loop_onset)))
+                result_dt_list, result_qty_list = self.decaycalc.CalculateRangeForDay(loop_day, data_dt_list[loop_label], data_qty_list[loop_label], loop_halflife, loop_onset)
+                loop_result_dt_list = result_dt_list
+                loop_result_labels_list.append(loop_label)
+                loop_result_qty_list.append(result_qty_list)
+
+            #   length len mismatch check:
+            #   {{{
+            if (len(loop_result_labels_list) != len(loop_result_qty_list)):
+                raise Exception("mismatch, len(loop_result_labels_list)=(%s) != len(loop_result_qty_list)=(%s)" % (len(loop_result_labels_list), len(loop_result_qty_list)))
+            for loop_qty_list in loop_result_qty_list:
+                if (len(loop_result_dt_list) != len(loop_qty_list)):
+                    raise Exception("mismatch, len(loop_result_dt_list)=(%s) != len(loop_qty_list)=(%s)" % (len(loop_result_dt_list), len(loop_qty_list)))
+            #   }}}
+
+            #   Continue: 2021-01-08T23:41:01AEDT results are loop_result_qty_list for each of arg_labels_list, plot this data for each day i.e: loop itteration
+            self.PlotResultsItemsForDay(loop_result_dt_list, loop_result_qty_list, loop_result_labels_list, arg_output_dir, loop_day, arg_color_options, True)
+
 
     #   About: Get a sorted list of the files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix' 
     def _GetAvailableFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix):
@@ -67,7 +155,6 @@ class TimePlot(object):
         _log.debug("result_dt_first=(%s)" % str(result_dt_first))
         _log.debug("result_dt_last=(%s)" % str(result_dt_last))
         return [ result_dt_first, result_dt_last ]
-                
 
     #   About: Given a list of files, get as a list qtys and datetimes (from columns arg_col_qty and arg_col_dt), for lines where value in column arg_col_label==arg_label (if arg_label is not None, otherwise read every line). Return [ results_dt, results_qty ] lists, sorted chronologicaly 
     def _ReadData(self, arg_files_list, arg_label, arg_col_dt, arg_col_qty, arg_col_label, arg_delim):
@@ -88,9 +175,7 @@ class TimePlot(object):
                         loop_qty_str = loop_line_split[arg_col_qty]
                         loop_qty = Decimal(loop_qty_str)
                     loop_dt_str = loop_line_split[arg_col_dt]
-
                     loop_dt_str = self._Fix_Datetime_Format(loop_dt_str)
-
                     loop_dt = dateparser.parse(loop_dt_str)
                     if (loop_dt is None):
                         raise Exception("Failed to parse loop_dt_str=(%s)" % str(loop_dt_str))
@@ -105,35 +190,159 @@ class TimePlot(object):
         return [ results_dt, results_qty ]
         #   }}}
 
+    #   About: If datetime is in 'dts' format, i.e: (2021-01-02)-(21-17-11) or (2021-01-02)-(2117-11), transform to iso format 2021-01-02T21:17:11, otherwise return as-is
     def _Fix_Datetime_Format(self, arg_dt_str):
-        #   If datetime is in 'dts' format, i.e: (2021-01-02)-(21-17-11), transform to iso format
+    #   {{{
+        #   
         regex_dts = r"\((\d{4}-\d{2}-\d{2})\)-\((\d{2})-?(\d{2})-?(\d{2})\)"
         _match_regex = re.match(regex_dts, arg_dt_str)
         if (_match_regex is not None):
             arg_dt_str = _match_regex.group(1) + "T" + _match_regex.group(2) + ":" + _match_regex.group(3) + ":" + _match_regex.group(4)
-
         return arg_dt_str
+    #   }}}
+
+    def align_yaxis_np(self, axes): 
+        import numpy as np
+        y_lims = np.array([ax.get_ylim() for ax in axes])
+        # force 0 to appear on all axes, comment if don't need
+        y_lims[:, 0] = y_lims[:, 0].clip(None, 0)
+        y_lims[:, 1] = y_lims[:, 1].clip(0, None)
+        # normalize all axes
+        y_mags = (y_lims[:,1] - y_lims[:,0]).reshape(len(y_lims),1)
+        y_lims_normalized = y_lims / y_mags
+        # find combined range
+        y_new_lims_normalized = np.array([np.min(y_lims_normalized), np.max(y_lims_normalized)])
+        # denormalize combined range to get new axes
+        new_lims = y_new_lims_normalized * y_mags
+        for i, ax in enumerate(axes):
+            ax.set_ylim(new_lims[i])    
+
+    #def align_yaxis_np(self, axes):
+    ##   {{{
+    #    """Align zeros of the two axes, zooming them out by same ratio"""
+    #    import numpy as np
+    #    #   LINK: https://stackoverflow.com/questions/10481990/matplotlib-axis-with-two-scales-shared-origin
+    #    axes = np.array(axes)
+    #    extrema = np.array([ax.get_ylim() for ax in axes])
+    #    # reset for divide by zero issues
+    #    for i in range(len(extrema)):
+    #        if np.isclose(extrema[i, 0], 0.0):
+    #            extrema[i, 0] = -1
+    #        if np.isclose(extrema[i, 1], 0.0):
+    #            extrema[i, 1] = 1
+    #    # upper and lower limits
+    #    lowers = extrema[:, 0]
+    #    uppers = extrema[:, 1]
+    #    # if all pos or all neg, don't scale
+    #    all_positive = False
+    #    all_negative = False
+    #    if lowers.min() > 0.0:
+    #        all_positive = True
+    #    if uppers.max() < 0.0:
+    #        all_negative = True
+    #    if all_negative or all_positive:
+    #        # don't scale
+    #        return
+    #    # pick "most centered" axis
+    #    res = abs(uppers+lowers)
+    #    min_index = np.argmin(res)
+    #    # scale positive or negative part
+    #    multiplier1 = abs(uppers[min_index]/lowers[min_index])
+    #    multiplier2 = abs(lowers[min_index]/uppers[min_index])
+    #    for i in range(len(extrema)):
+    #        # scale positive or negative part based on which induces valid
+    #        if i != min_index:
+    #            lower_change = extrema[i, 1] * -1*multiplier2
+    #            upper_change = extrema[i, 0] * -1*multiplier1
+    #            if upper_change < extrema[i, 1]:
+    #                extrema[i, 0] = lower_change
+    #            else:
+    #                extrema[i, 1] = upper_change
+    #        # bump by 10% for a margin
+    #        extrema[i, 0] *= 1.1
+    #        extrema[i, 1] *= 1.1
+    #    # set axes limits
+    #    [axes[i].set_ylim(*extrema[i]) for i in range(len(extrema))]
+    ##   }}}
+
+
+    def PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
+        _log.debug("arg_output_dir=(%s)" % str(arg_output_dir))
+        _log.debug("arg_output_fname=(%s)" % str(arg_output_fname))
+        #   Remove timezone from datetimes (so they appear correctly on plot)
+        arg_result_dt_noTZ = []
+        for loop_dt in arg_result_dt:
+            arg_result_dt_noTZ.append(loop_dt.replace(tzinfo=None))
+        #   Hide debug log output from matplotlib
+        mpl_logger = logging.getLogger('matplotlib')
+        mpl_logger.setLevel(logging.WARNING)
+        #   Plot qty list corresponding to each label
+        fig, ax = plt.subplots()
+        ax.set_xlabel('time')
+        myFmt = DateFormatter("%H")
+        #ax.xaxis.set_major_formatter(myFmt)
+
+        #   Setup axis list, one axis for each non-zero list in arg_result_qty_list
+        ax_list = [ ]
+        #   {{{
+        loop_i = 0
+        while (loop_i < len(arg_labels_list)):
+            _found_gtZero = False
+            loop_qty_list = arg_result_qty_list[loop_i]
+            for loop_qty_value in loop_qty_list:
+                if (loop_qty_value > 0):
+                    _found_gtZero = True
+                    break
+            if (_found_gtZero):
+                if (len(ax_list) > 0):
+                    ax_list.append(ax_list[loop_i-1].twinx())
+                else:
+                    ax_list.append(ax)
+            loop_i += 1
+        #   }}}
+        if (arg_color_options is None):
+            arg_color_options = self.default_color_options
+        for loop_ax, loop_label, loop_qty_list, loop_color  in zip(ax_list, arg_labels_list, arg_result_qty_list, arg_color_options):
+            #   Check loop_qty_list contains at least one non-zero value, otherwise do not plot (prevents distorition of axis by align_yaxis_np for all-zero case)
+            _found_gtZero = False
+            for loop_qty_value in loop_qty_list:
+                if (loop_qty_value > 0):
+                    _found_gtZero = True
+                    break
+            if (_found_gtZero):
+                loop_ax.set_ylabel(loop_label, color=loop_color)
+                loop_ax.xaxis.set_major_formatter(myFmt)
+                loop_ax.set_xlim(arg_result_dt_noTZ[0], arg_result_dt_noTZ[-1])
+                loop_ax.tick_params(axis='y', labelcolor=loop_color)
+                loop_ax.plot(arg_result_dt_noTZ, loop_qty_list, color=loop_color)
+                #ax_list[-1].xaxis.set_major_locator(MultipleLocator((1/24)))
+                #ax_list[-1].yaxis.set_minor_locator(AutoMinorLocator(1))
+
+        #   if arg_markNow, and current time is on plot, include point/line <on first/last> plot line
+        fig.tight_layout()
+        fig.autofmt_xdate()
+        #self.align_yaxis_np(ax_list)
+        plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
 
     #   About: plot datetimes and corresponding quantities, and save to given dir with given filename. If current datetime is in datetime range, mark it on plot
     def _PlotResultsForDay(self, arg_result_dt, arg_result_qty, arg_output_dir=None, arg_output_fname=None, arg_markNow=False):
     #   {{{
     #   TODO: 2021-01-04T14:42:45AEST handle multiple lists for arg_result_qty
-        from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
         #   Remove timezone from datetimes
-        arg_result_dt_nonetzinfo = []
+        arg_result_dt_noTZ = []
         for loop_dt in arg_result_dt:
-            arg_result_dt_nonetzinfo.append(loop_dt.replace(tzinfo=None))
-        #   Hide log output for matplotlib
+            arg_result_dt_noTZ.append(loop_dt.replace(tzinfo=None))
+        #   Hide debug log output for matplotlib
         mpl_logger = logging.getLogger('matplotlib')
         mpl_logger.setLevel(logging.WARNING)
         fig, ax = plt.subplots()
-        ax.plot(arg_result_dt_nonetzinfo, arg_result_qty)
+        ax.plot(arg_result_dt_noTZ, arg_result_qty)
         #   If 'now' is between loop_dt[0] and loop_dt[-1], mark it with a dot
         _now = datetime.datetime.now()
         _now_y = 1
         #   If current time is between start/end of arg_result_dt, include point on plot
-        if (arg_markNow) and (_now > arg_result_dt_nonetzinfo[0] and _now < arg_result_dt_nonetzinfo[-1]):
-            for loop_dt, loop_qty in zip(arg_result_dt_nonetzinfo, arg_result_qty):
+        if (arg_markNow) and (_now > arg_result_dt_noTZ[0] and _now < arg_result_dt_noTZ[-1]):
+            for loop_dt, loop_qty in zip(arg_result_dt_noTZ, arg_result_qty):
                 if (loop_dt > _now):
                     _now_y = loop_qty
                     break
@@ -141,7 +350,7 @@ class TimePlot(object):
         myFmt = DateFormatter("%H")
         ax.xaxis.set_major_formatter(myFmt)
 #        ax.set_ylim(0, 15)
-        ax.set_xlim(arg_result_dt_nonetzinfo[0], arg_result_dt_nonetzinfo[-1])
+        ax.set_xlim(arg_result_dt_noTZ[0], arg_result_dt_noTZ[-1])
         ax.xaxis.set_major_locator(MultipleLocator((1/24)))
         ax.yaxis.set_minor_locator(AutoMinorLocator(1))
         fig.autofmt_xdate()
@@ -150,14 +359,23 @@ class TimePlot(object):
 
     #   About: Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last
     def _GetFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
-    #   {{{
+    #   {{{ 
         #   Get list of year/month strings for months between arg_dt_first/arg_dt_last, inclusive, plus the month before arg_dt_first
+        #   Parsing partial datetime '2021-01' with dateparser.parse gives a date in the middle of the month -> therefore replace day of month to 1 if parsing from string
+        if (isinstance(arg_dt_first, str)):
+            arg_dt_first = dateparser.parse(arg_dt_first)
+            arg_dt_first = arg_dt_first.replace(day=1)
+        if (isinstance(arg_dt_last, str)):
+            arg_dt_last = dateparser.parse(arg_dt_last)
+            arg_dt_last = arg_dt_last.replace(day=1)
+
         if (arg_dt_first > arg_dt_last):
             raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
         _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
         _dt_format_output = '%Y-%m'
         _dt_freq = 'MS'
         arg_dt_beforeFirst = arg_dt_first
+        _log.debug("arg_includeMonthBefore=(%s)" % str(arg_includeMonthBefore))
         if (arg_includeMonthBefore):
             arg_dt_beforeFirst = arg_dt_first + relativedelta(months = -1)
         _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
