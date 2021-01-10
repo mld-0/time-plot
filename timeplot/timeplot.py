@@ -47,9 +47,8 @@ class TimePlot(object):
     #    pass
 
     #   About: As per Analyse Month, for all days between arg_date_start and arg_date_end
-    def AnalyseDataRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
-        pass
-
+    def AnalyseDataRangeByMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #   {{{
         if (isinstance(arg_date_start, str)):
             arg_date_start = dateparser.parse(arg_date_start)
         if (isinstance(arg_date_end, str)):
@@ -70,19 +69,23 @@ class TimePlot(object):
 
         for loop_month in months_list:
             self.AnalyseMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, loop_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+        #   }}}
         
 
 
     #   As per Analyse Month, for all days between first and last date in input
     def AnalyseDataAll(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #   {{{
         located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
         #self._data_dir, self.prefix, self.postfix)
         #_log.debug("located_filepaths=(%s)" % str(located_filepaths))
         dt_first, dt_last = self._GetDatetimesFirstAndLast_FromFileList(located_filepaths, arg_col_dt, arg_col_delim)
         #_log.debug("dt_first=(%s), dt_last=(%s)" % (str(dt_first), str(dt_last)))
-        return self.AnalyseDataRange(arg_data_dir, arg_file_prefix, arg_file_postfix, dt_first, dt_last, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+        return self.AnalyseDataRangeByMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, dt_first, dt_last, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+    #   }}}
 
     def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #   {{{
         if (isinstance(arg_date_month, str)):
             arg_date_month = dateparser.parse(arg_date_month)
             arg_date_month = arg_date_month.replace(day=1)
@@ -93,6 +96,7 @@ class TimePlot(object):
         days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
         #_log.debug("days_list=(%s)" % str(days_list))
         return self.AnalyseDayRange(arg_data_dir, arg_file_prefix, arg_file_postfix, days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+    #   }}}
 
 
 

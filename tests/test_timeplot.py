@@ -80,20 +80,33 @@ class Test_DecayCalc(unittest.TestCase):
     color_options = [ "blue", "green" ]
 
     labels_list = [ "D-IR", "Can-S" ]
-    halflives_list = [ 45*60, 30*60 ]
+    halflives_list = [ 45*60, 45*60 ]
     onset_lists = [ 20*60, 3*60 ]
 
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
 
-    def test_AnalyseAll(self):
-            #labels_list = [ "D-IR", "Can-S" ]
-            #halflives_list = [ 45*60, 30*60 ]
-            #onset_lists = [ 20*60, 3*60 ]
-        self.timeplot.AnalyseDataAll(self._data_dir, self.prefix, self.postfix, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+    def test_AnalyseCurrentMonth(self):
+            date_start = datetime.datetime.now()
+            date_end = datetime.datetime.now()
+            self.timeplot.AnalyseDataRangeByMonth(self._data_dir, self.prefix, self.postfix, date_start, date_end, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+
+            #today_analyse = datetime.datetime.now()
+            #located_filepaths = self.timeplot._GetFiles_Monthly(self._data_dir, self.prefix, self.postfix, self.dt_start, self.dt_end, True)
+            #results_dt, results_qty = self.timeplot._ReadData(located_filepaths, self.label, self.col_dt, self.col_qty, self.col_label, self.delim)
+            #_result_dt_list, _result_qty_list = self.decaycalc.CalculateRangeForDay(today_analyse, results_dt, results_qty, self.halflife, self.onset)
+            #_output_fname = today_analyse.strftime("%Y-%m-%d")
+            #self.timeplot._PlotResultsForDay(_result_dt_list, _result_qty_list, self._output_dir, _output_fname, True)
+            #if (self._flag_openPlots):
+            #    webbrowser.open('file:%s' % self._output_dir)
+            #sys.stderr.write(self._test_postfix)
+        
 
     if (False):
+        def test_AnalyseAll(self):
+            self.timeplot.AnalyseDataAll(self._data_dir, self.prefix, self.postfix, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
 
+    if (False):
         def test_AnalyseMonth(self):
             #labels_list = [ "D-IR", "Can-S" ]
             #halflives_list = [ 45*60, 30*60 ]
@@ -101,6 +114,7 @@ class Test_DecayCalc(unittest.TestCase):
             self.timeplot.AnalyseMonth(self._data_dir, self.prefix, self.postfix, self.month_analyse, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
             if (self._flag_openPlots):
                 webbrowser.open('file:%s' % self._output_dir)
+            sys.stderr.write(self._test_postfix)
 
         def test_GetDatetimesFirstAndLast_FromFileList(self):
             located_filepaths = self.timeplot._GetAvailableFiles_Monthly(self._data_dir, self.prefix, self.postfix)
