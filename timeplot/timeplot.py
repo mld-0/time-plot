@@ -431,10 +431,10 @@ class TimePlot(object):
         #   Parsing partial datetime '2021-01' with dateparser.parse gives a date in the middle of the month -> therefore replace day of month to 1 if parsing from string
         if (isinstance(arg_dt_first, str)):
             arg_dt_first = dateparser.parse(arg_dt_first)
-            arg_dt_first = arg_dt_first.replace(day=1)
+        arg_dt_first = arg_dt_first.replace(day=1)
         if (isinstance(arg_dt_last, str)):
             arg_dt_last = dateparser.parse(arg_dt_last)
-            arg_dt_last = arg_dt_last.replace(day=1)
+        arg_dt_last = arg_dt_last.replace(day=1)
 
         if (arg_dt_first > arg_dt_last):
             raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
@@ -443,15 +443,22 @@ class TimePlot(object):
         _dt_freq = 'MS'
         arg_dt_beforeFirst = arg_dt_first
         _log.debug("arg_includeMonthBefore=(%s)" % str(arg_includeMonthBefore))
+
         if (arg_includeMonthBefore):
             arg_dt_beforeFirst = arg_dt_first + relativedelta(months = -1)
+
+        arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
+
         _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
         _log.debug("arg_dt_beforeFirst=(%s)" % str(arg_dt_beforeFirst))
         _log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
+
         dt_Range = [ x for x in pandas.date_range(start=arg_dt_beforeFirst.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
         dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
+
         _log.debug("dt_Range=(%s)" % str(dt_Range))
         _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
+
         #   Raise exception if arg_data_dir doesn't exist
         if not os.path.isdir(arg_data_dir):
             raise Exception("dir not found arg_data_dir=(%s)" % str(arg_data_dir))
@@ -466,7 +473,7 @@ class TimePlot(object):
         if len(located_filepaths) == 0:
             raise Exception("no files located")
         return located_filepaths
-        #   }}}
+    #   }}}
 
     #   About: Given a path to gpg encrypted file, decrypt file using system gpg/keychain, raise Exception if file is not decryptable, or if it doesn't exist
     def _DecryptGPGFileToString(self, arg_path_file):
