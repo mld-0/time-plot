@@ -77,7 +77,7 @@ class Test_DecayCalc(unittest.TestCase):
     onset = 20 * 60
     halflife = 30 * 60
 
-    color_options = [ "blue", "green" ]
+    color_options = [ "blue", "green", "red", "black", "orange" ]
 
     labels_list = [ "D-IR", "Can-S" ]
     halflives_list = [ 45*60, 45*60 ]
@@ -86,21 +86,29 @@ class Test_DecayCalc(unittest.TestCase):
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
 
-    def test_AnalyseCurrentMonth(self):
+    def test_AnalyseToday(self):
             date_start = datetime.datetime.now()
             date_end = datetime.datetime.now()
-            self.timeplot.AnalyseDataRangeByMonth(self._data_dir, self.prefix, self.postfix, date_start, date_end, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+            #self.timeplot.AnalyseDayRange(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+            self.timeplot.AnalyseDayRange(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, None, self.color_options)
 
-            #today_analyse = datetime.datetime.now()
-            #located_filepaths = self.timeplot._GetFiles_Monthly(self._data_dir, self.prefix, self.postfix, self.dt_start, self.dt_end, True)
-            #results_dt, results_qty = self.timeplot._ReadData(located_filepaths, self.label, self.col_dt, self.col_qty, self.col_label, self.delim)
-            #_result_dt_list, _result_qty_list = self.decaycalc.CalculateRangeForDay(today_analyse, results_dt, results_qty, self.halflife, self.onset)
-            #_output_fname = today_analyse.strftime("%Y-%m-%d")
-            #self.timeplot._PlotResultsForDay(_result_dt_list, _result_qty_list, self._output_dir, _output_fname, True)
-            #if (self._flag_openPlots):
-            #    webbrowser.open('file:%s' % self._output_dir)
-            #sys.stderr.write(self._test_postfix)
-        
+    #def test_AnalyseCurrentMonth(self):
+    #        date_start = datetime.datetime.now()
+    #        date_end = datetime.datetime.now()
+    #        self.timeplot.AnalyseDataRangeByMonth(self._data_dir, self.prefix, self.postfix, date_start, date_end, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+
+
+    #def test_TodayAnalyse(self):
+    #    today_analyse = datetime.datetime.now()
+    #    located_filepaths = self.timeplot._GetFiles_Monthly(self._data_dir, self.prefix, self.postfix, self.dt_start, self.dt_end, True)
+    #    results_dt, results_qty = self.timeplot._ReadData(located_filepaths, self.label, self.col_dt, self.col_qty, self.col_label, self.delim)
+    #    _result_dt_list, _result_qty_list = self.decaycalc.CalculateRangeForDay(today_analyse, results_dt, results_qty, self.halflife, self.onset)
+    #    _output_fname = today_analyse.strftime("%Y-%m-%d")
+    #    self.timeplot._PlotResultsForDay(_result_dt_list, _result_qty_list, self._output_dir, _output_fname, True)
+    #    if (self._flag_openPlots):
+    #        webbrowser.open('file:%s' % self._output_dir)
+    #    sys.stderr.write(self._test_postfix)
+    
 
     if (False):
         def test_AnalyseAll(self):

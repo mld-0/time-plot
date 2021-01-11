@@ -120,10 +120,11 @@ class TimePlot(object):
         #m = arg_date_month.month
         #arg_days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
         ##_log.debug("days_list=(%s)" % str(days_list))
-        _log.debug("arg_days_list=(%s)" % str(arg_days_list))
+        #_log.debug("arg_days_list=(%s)" % str(arg_days_list))
 
         located_filepaths = self._GetFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list[0], arg_days_list[-1], True)
         #located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        _log.debug("located_filepaths\n%s" % str(located_filepaths))
 
         #   For loop_date in days_list, get results_dt and results_qty lists for each label, and plot together for said day
         result_dt = []
@@ -141,7 +142,12 @@ class TimePlot(object):
 
         #for loop_day, loop_halflife, loop_onset  in zip(days_list, arg_halflives_list, arg_onset_lists):
         for loop_day in arg_days_list:
-            loop_day_date = dateparser.parse(loop_day)
+            loop_day_date = None
+            if not isinstance(loop_day, datetime.datetime):
+                loop_day_date = dateparser.parse(loop_day)
+            else:
+                loop_day_date = loop_day
+                loop_day = loop_day_date.strftime("%Y-%m-%d")
             _log.debug("loop_day=(%s)" % str(loop_day))
             #_log.debug("loop_day_date=(%s)" % str(loop_day_date))
             if (flag_restrictFuture) and (_now < loop_day_date):
@@ -201,8 +207,7 @@ class TimePlot(object):
     def _ReadData(self, arg_files_list, arg_label, arg_col_dt, arg_col_qty, arg_col_label, arg_delim):
     #   {{{
         _log.debug("arg_label=(%s)" % str(arg_label))
-        _log.debug("arg_delim=(%s)" % str(arg_delim))
-        _log.debug("cols: (dt, qty, label)=(%s, %s, %s)" % (arg_col_dt, arg_col_qty, arg_col_label))
+        _log.debug("cols: (dt, qty, label)=(%s, %s, %s), delim=(%s)" % (arg_col_dt, arg_col_qty, arg_col_label, arg_delim))
         results_dt = []
         results_qty = []
         for loop_filepath in arg_files_list:
@@ -309,11 +314,9 @@ class TimePlot(object):
     ##   }}}
 
 
-    #   TODO: 2021-01-09T20:15:30AEDT do not save plot unless at least one _found_gtZero is True
     def PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
     #   {{{
-        _log.debug("arg_output_dir=(%s)" % str(arg_output_dir))
-        _log.debug("arg_output_fname=(%s)" % str(arg_output_fname))
+        """Plot list of list of qty values, against single list of time, with labels and colours specified. Show figure if arg_output_dir is None, otherwise save it."""
         #   Remove timezone from datetimes (so they appear correctly on plot)
         arg_result_dt_noTZ = []
         for loop_dt in arg_result_dt:
@@ -326,7 +329,10 @@ class TimePlot(object):
         ax.set_xlabel('time')
         myFmt = DateFormatter("%H")
         #ax.xaxis.set_major_formatter(myFmt)
-        _flag_savePlot = False
+        _check_showPlot = False
+
+        _log.debug("arg_output_dir=(%s)" % str(arg_output_dir))
+        _log.debug("arg_output_fname=(%s)" % str(arg_output_fname))
 
         #   Setup axis list, one axis for each non-zero list in arg_result_qty_list
         ax_list = [ ]
@@ -354,7 +360,7 @@ class TimePlot(object):
             for loop_qty_value in loop_qty_list:
                 if (loop_qty_value > 0):
                     _found_gtZero = True
-                    _flag_savePlot = True
+                    _check_showPlot = True
                     break
             if (_found_gtZero):
                 loop_ax.set_ylabel(loop_label, color=loop_color)
@@ -380,14 +386,24 @@ class TimePlot(object):
                             break
                     loop_ax.plot([_now], [_now_y], marker='o', markersize=3, color=loop_color)
 
+        if not (_check_showPlot):
+            _log.warning("_check_showPlot=(%s), skip" % str(_check_showPlot))
+            return 
+
         fig.tight_layout()
         fig.autofmt_xdate()
-        #self.align_yaxis_np(ax_list)
-        if (_flag_savePlot):
-            plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
+
+        if not (arg_output_dir is None):
+            _path_save = os.path.join(arg_output_dir, arg_output_fname + ".png")
+            plt.savefig(_path_save)
+            _log.debug("_path_save=(%s)" % str(_path_save))
+            return _path_save
         else:
-            _log.warning("_flag_savePlot=(%s), skip save" % str(_flag_savePlot))
-        #   }}}
+            #plt.ioff()
+            #plt.show(block=False)
+            plt.show()
+            pass
+    #   }}}
 
     #   About: plot datetimes and corresponding quantities, and save to given dir with given filename. If current datetime is in datetime range, mark it on plot
     def _PlotResultsForDay(self, arg_result_dt, arg_result_qty, arg_output_dir=None, arg_output_fname=None, arg_markNow=False):
