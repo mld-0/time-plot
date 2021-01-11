@@ -70,7 +70,7 @@ class TimePlot(object):
         for loop_month in months_list:
             self.AnalyseMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, loop_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
         #   }}}
-        
+
 
 
     #   As per Analyse Month, for all days between first and last date in input
@@ -101,7 +101,6 @@ class TimePlot(object):
 
 
     def AnalyseDayRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
-    #def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
     #   {{{
         _now = datetime.datetime.now()
         _log.debug("arg_data_dir=(%s)" % str(arg_data_dir))
@@ -189,7 +188,6 @@ class TimePlot(object):
         datetimes_list = []
         for loop_file in arg_files_list:
             loop_results_dt, loop_results_qty = self._ReadData([ loop_file ], None, arg_col_dt, None, None, arg_delim)
-            #datetimes_list.append(loop_results_dt)
             datetimes_list = datetimes_list + loop_results_dt
         datetimes_list.sort()
         #_log.debug("datetimes_list=(%s)" % str(datetimes_list))
@@ -424,29 +422,90 @@ class TimePlot(object):
         plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
     #   }}}
 
-    #   About: Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last
-    def _GetFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
-    #   {{{ 
-        #   Get list of year/month strings for months between arg_dt_first/arg_dt_last, inclusive, plus the month before arg_dt_first
-        #   Parsing partial datetime '2021-01' with dateparser.parse gives a date in the middle of the month -> therefore replace day of month to 1 if parsing from string
+    def _EncryptString2GPGByteArray(self, text_str, gpg_key_id, flag_ascii_armor=False):
+    #   {{{
+        """Take a string, encrypt that string with the system gpg keychain, and return result as a bytearray"""
+        t_start = time.time()
+        #   convert string(text_str) -> bytearray(cmd_encrypt_input)
+        cmd_encrypt_input = bytearray()
+        cmd_encrypt_input.extend(text_str.encode())
+        #   gpg encrypt arguments
+        cmd_gpg_encrypt = [ "gpg", "-o", "-", "-q", "--encrypt", "--recipient", gpg_key_id ]
+        if (flag_ascii_armor == True):
+            cmd_gpg_encrypt.append("--armor")
+        #   Use Popen, call cmd_gpg_encrypt, using PIPE for stdin/stdout/stderr
+        p = Popen(cmd_gpg_encrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        result_data_encrypt, result_stderr = p.communicate(input=cmd_encrypt_input)
+        result_stderr = result_stderr.decode()
+
+        rc = p.returncode
+        if (rc != 0):
+            raise Exception("Failed to encrypt, rc=(%s)" % str(rc))
+
+        t_end = time.time()
+        t_elapsed = round(t_end - t_start, 2)
+        #   printdebug:
+        _log.debug("encrypt dt=(%s)" % (str(t_elapsed)))
+        _log.debug("cmd_gpg_encrypt=(%s)" % str(cmd_gpg_encrypt))
+        _log.debug("result_stderr=(%s)" % str(result_stderr))
+        _log.debug("text_str_len=(%s)" % str(len(text_str)))
+        _log.debug("result_data_encrypt_len=(%s)" % str(len(result_data_encrypt)))
+
+        return result_data_encrypt
+    #   }}}
+
+    def _CopyAndDivideDataByMonth(self, arg_source_path, arg_dest_dir, arg_dest_prefix, arg_dest_postfix, arg_dt_first, arg_dt_last, arg_overwrite=False, arg_includeMonthBefore=False, arg_gpg_key=None):
+    #   {{{
+        """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month"""
+        dt_Range_str = self._GetMonthRange(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
+
+        for loop_dt_str in dt_Range_str:
+            loop_data = ""
+            with open(arg_source_path, "r") as f:
+                for loop_line in f:
+                    loop_line = loop_line.strip()
+                    #   If loop_line contains loop_dt_str, append it to loop_data
+                    if not loop_line.find(loop_dt_str) == -1:
+                        loop_data += loop_line + '\n'
+            _log.debug("loop_dt_str=(%s) lines(loop_data)=(%s)" % (str(loop_dt_str), len(loop_data.split('\n'))))
+
+            loop_dest_filename = arg_dest_prefix + loop_dt_str + arg_dest_postfix
+            loop_dest_filepath = os.path.join(arg_dest_dir, loop_dest_filename)
+            _log.debug("loop_dest_filename=(%s)" % str(loop_dest_filename))
+
+            if os.path.isfile(loop_dest_filepath) and not arg_overwrite:
+                _log.debug("skip write, arg_overwrite=(%s)" % str(arg_overwrite))
+                return 
+
+            if not (arg_gpg_key is None):
+                #   TODO: 2021-01-11T18:46:45AEDT if hash of loop_data matches hash of decrypted contents of loop_dest_filepath, skip write
+                loop_data_enc = self._EncryptString2GPGByteArray(loop_data, arg_gpg_key, False)
+                with open(loop_dest_filepath, "wb") as f:
+                    f.write(loop_data_enc)
+            else:
+                with open(loop_dest_filepath, "w") as f:
+                    f.write(loop_data)
+    #   }}}
+
+    def _GetMonthRange(self, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
+    #   {{{
         if (isinstance(arg_dt_first, str)):
             arg_dt_first = dateparser.parse(arg_dt_first)
         arg_dt_first = arg_dt_first.replace(day=1)
         if (isinstance(arg_dt_last, str)):
             arg_dt_last = dateparser.parse(arg_dt_last)
         arg_dt_last = arg_dt_last.replace(day=1)
-
         if (arg_dt_first > arg_dt_last):
             raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
         _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
         _dt_format_output = '%Y-%m'
         _dt_freq = 'MS'
+
         arg_dt_beforeFirst = arg_dt_first
         _log.debug("arg_includeMonthBefore=(%s)" % str(arg_includeMonthBefore))
 
         if (arg_includeMonthBefore):
             arg_dt_beforeFirst = arg_dt_first + relativedelta(months = -1)
-
         arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
 
         _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
@@ -458,6 +517,17 @@ class TimePlot(object):
 
         _log.debug("dt_Range=(%s)" % str(dt_Range))
         _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
+
+        if (arg_result_str):
+            return dt_Range_str
+        else:
+            return dt_Range
+    #   }}}
+
+    #   About: Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last
+    def _GetFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
+    #   {{{ 
+        dt_Range_str = self._GetMonthRange(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
 
         #   Raise exception if arg_data_dir doesn't exist
         if not os.path.isdir(arg_data_dir):
@@ -475,9 +545,9 @@ class TimePlot(object):
         return located_filepaths
     #   }}}
 
-    #   About: Given a path to gpg encrypted file, decrypt file using system gpg/keychain, raise Exception if file is not decryptable, or if it doesn't exist
     def _DecryptGPGFileToString(self, arg_path_file):
     #   {{{
+        """Given a path to gpg encrypted file, decrypt file using system gpg/keychain, raise Exception if file is not decryptable, or if it doesn't exist"""
         _log.debug("file=(%s)" % str(os.path.basename(arg_path_file)))
         cmd_gpg_decrypt = ["gpg", "-q", "--decrypt", arg_path_file ]
         p = Popen(cmd_gpg_decrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
