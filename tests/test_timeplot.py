@@ -89,13 +89,13 @@ class Test_DecayCalc(unittest.TestCase):
     def test_AnalyseToday(self):
             date_start = datetime.datetime.now()
             date_end = datetime.datetime.now()
-            #self.timeplot.AnalyseDayRange(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
-            self.timeplot.AnalyseDayRange(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, None, self.color_options)
+            #self.timeplot.AnalyseDataByDaysList(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+            self.timeplot.AnalyseDataByDaysList(self._data_dir, self.prefix, self.postfix, [ date_start, date_end ], self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, None, self.color_options)
 
     #def test_AnalyseCurrentMonth(self):
     #        date_start = datetime.datetime.now()
     #        date_end = datetime.datetime.now()
-    #        self.timeplot.AnalyseDataRangeByMonth(self._data_dir, self.prefix, self.postfix, date_start, date_end, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+    #        self.timeplot.AnalyseDataByMonthForDateRange(self._data_dir, self.prefix, self.postfix, date_start, date_end, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
 
 
     #def test_TodayAnalyse(self):
@@ -112,14 +112,14 @@ class Test_DecayCalc(unittest.TestCase):
 
     if (False):
         def test_AnalyseAll(self):
-            self.timeplot.AnalyseDataAll(self._data_dir, self.prefix, self.postfix, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+            self.timeplot.AnalyseDataByMonthForAll(self._data_dir, self.prefix, self.postfix, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
 
     if (False):
         def test_AnalyseMonth(self):
             #labels_list = [ "D-IR", "Can-S" ]
             #halflives_list = [ 45*60, 30*60 ]
             #onset_lists = [ 20*60, 3*60 ]
-            self.timeplot.AnalyseMonth(self._data_dir, self.prefix, self.postfix, self.month_analyse, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
+            self.timeplot.AnalyseDataForMonth(self._data_dir, self.prefix, self.postfix, self.month_analyse, self.labels_list, self.halflives_list, self.onset_lists, self.col_dt, self.col_qty, self.col_label, self.delim, self._output_dir, self.color_options)
             if (self._flag_openPlots):
                 webbrowser.open('file:%s' % self._output_dir)
             sys.stderr.write(self._test_postfix)

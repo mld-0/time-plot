@@ -4,6 +4,7 @@
 #   }}}1
 #   Imports:
 #   {{{3
+import calendar
 import argparse
 import io
 import sys
@@ -26,9 +27,9 @@ from dateutil.relativedelta import relativedelta
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #   }}}1
-import calendar
-from decaycalc.decaycalc import DecayCalc
 #   {{{2
+from decaycalc.decaycalc import DecayCalc
+
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
@@ -40,15 +41,25 @@ class TimePlot(object):
 
     default_color_options = [ 'tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple' ]
 
-
     #   Continue: 2021-01-03T17:17:49AEST function, for a given month, and a given list of log labels, read all log data for that month, and previous month, then calculate and plot quantities for all given label item for each day in that month
     ##   Given <arguments>, (call methods to) get lists of data from file(s) in arg_data_dir, and return list of calculated qtys remaining for each datetime in arg_dt_list 
     #def CalculateFromFilesRange_Monthly(self, arg_dt_list, arg_data_dir, arg_halflife, arg_onset, arg_file_prefix, arg_file_postfix):
     #    pass
 
-    #   About: As per Analyse Month, for all days between arg_date_start and arg_date_end
-    def AnalyseDataRangeByMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    def AnalyseDataByMonthForAll(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
     #   {{{
+        """call AnalyseDataForMonth, for each month between first and last date in input"""
+        located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
+        #self._data_dir, self.prefix, self.postfix)
+        _log.debug("located_filepaths=(%s)" % str(located_filepaths))
+        dt_first, dt_last = self._GetDatetimesFirstAndLast_FromFileList(located_filepaths, arg_col_dt, arg_col_delim)
+        _log.debug("dt_first=(%s), dt_last=(%s)" % (str(dt_first), str(dt_last)))
+        return self.AnalyseDataByMonthForDateRange(arg_data_dir, arg_file_prefix, arg_file_postfix, dt_first, dt_last, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+    #   }}}
+
+    def AnalyseDataByMonthForDateRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_start, arg_date_end, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    #   {{{
+        """As per Analyse Month, for all days between arg_date_start and arg_date_end"""
         if (isinstance(arg_date_start, str)):
             arg_date_start = dateparser.parse(arg_date_start)
         if (isinstance(arg_date_end, str)):
@@ -59,7 +70,7 @@ class TimePlot(object):
         located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
         #_log.debug("located_filepaths=(%s)" % str(located_filepaths))
 
-        #   Continue: 2021-01-09T19:17:44AEDT Get list of months between arg_date_start, arg_date_end, and call self.AnalyseMonth() for each
+        #   Continue: 2021-01-09T19:17:44AEDT Get list of months between arg_date_start, arg_date_end, and call self.AnalyseDataForMonth() for each
         months_list = []
         loop_date = arg_date_start
         while loop_date <= arg_date_end:
@@ -68,23 +79,10 @@ class TimePlot(object):
         _log.debug("months_list=(%s)" % str(months_list))
 
         for loop_month in months_list:
-            self.AnalyseMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, loop_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+            self.AnalyseDataForMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, loop_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
         #   }}}
 
-
-
-    #   As per Analyse Month, for all days between first and last date in input
-    def AnalyseDataAll(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
-    #   {{{
-        located_filepaths = self._GetAvailableFiles_Monthly(arg_data_dir, arg_file_prefix, arg_file_postfix)
-        #self._data_dir, self.prefix, self.postfix)
-        #_log.debug("located_filepaths=(%s)" % str(located_filepaths))
-        dt_first, dt_last = self._GetDatetimesFirstAndLast_FromFileList(located_filepaths, arg_col_dt, arg_col_delim)
-        #_log.debug("dt_first=(%s), dt_last=(%s)" % (str(dt_first), str(dt_last)))
-        return self.AnalyseDataRangeByMonth(arg_data_dir, arg_file_prefix, arg_file_postfix, dt_first, dt_last, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
-    #   }}}
-
-    def AnalyseMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    def AnalyseDataForMonth(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_date_month, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
     #   {{{
         if (isinstance(arg_date_month, str)):
             arg_date_month = dateparser.parse(arg_date_month)
@@ -95,12 +93,10 @@ class TimePlot(object):
         m = arg_date_month.month
         days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
         #_log.debug("days_list=(%s)" % str(days_list))
-        return self.AnalyseDayRange(arg_data_dir, arg_file_prefix, arg_file_postfix, days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
+        return self.AnalyseDataByDaysList(arg_data_dir, arg_file_prefix, arg_file_postfix, days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options, flag_restrictFuture)
     #   }}}
 
-
-
-    def AnalyseDayRange(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
+    def AnalyseDataByDaysList(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_days_list, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
     #   {{{
         _now = datetime.datetime.now()
         _log.debug("arg_data_dir=(%s)" % str(arg_data_dir))
@@ -141,6 +137,7 @@ class TimePlot(object):
             #data_qty_list = data_qty_list + loop_data_qty_list
 
         #for loop_day, loop_halflife, loop_onset  in zip(days_list, arg_halflives_list, arg_onset_lists):
+        #_paths_plot_save = []
         for loop_day in arg_days_list:
             loop_day_date = None
             if not isinstance(loop_day, datetime.datetime):
@@ -175,12 +172,12 @@ class TimePlot(object):
 
             #   Continue: 2021-01-08T23:41:01AEDT results are loop_result_qty_list for each of arg_labels_list, plot this data for each day i.e: loop itteration
             self.PlotResultsItemsForDay(loop_result_dt_list, loop_result_qty_list, loop_result_labels_list, arg_output_dir, loop_day, arg_color_options, True)
+            #_paths_plot_save.append(_plot_save)
     #   }}}
 
-
-    #   About: Get a sorted list of the files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix' 
     def _GetAvailableFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix):
     #   {{{
+        """Get a sorted list of the files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix'"""
         filematches_regex = arg_file_prefix + "[0-9][0-9][0-9][0-9]-[0-9][0-9]" + arg_file_postfix
         filematches_glob = os.path.join(arg_data_dir, filematches_regex)
         _log.debug("filematches_glob=(%s)" % str(filematches_glob))
@@ -191,21 +188,28 @@ class TimePlot(object):
     #   }}}
 
     def _GetDatetimesFirstAndLast_FromFileList(self, arg_files_list, arg_col_dt, arg_delim):
+    #   {{{
+        """Get list of datetimes in file, sort, and return [ first, last ]. Note that sorting datetimes is only possible if they either all do, or all do not, have timezone info"""
         datetimes_list = []
         for loop_file in arg_files_list:
             loop_results_dt, loop_results_qty = self._ReadData([ loop_file ], None, arg_col_dt, None, None, arg_delim)
             datetimes_list = datetimes_list + loop_results_dt
-        datetimes_list.sort()
+        try:
+            datetimes_list.sort()
+        except Exception as e:
+            _log.warning("%s, %s" % (type(e), str(e)))
+            _log.warning("Failed to sort datetimes_list, using in order read from file")
         #_log.debug("datetimes_list=(%s)" % str(datetimes_list))
         result_dt_first = datetimes_list[0] 
         result_dt_last = datetimes_list[-1] 
         _log.debug("result_dt_first=(%s)" % str(result_dt_first))
         _log.debug("result_dt_last=(%s)" % str(result_dt_last))
         return [ result_dt_first, result_dt_last ]
+    #   }}}
 
-    #   About: Given a list of files, get as a list qtys and datetimes (from columns arg_col_qty and arg_col_dt), for lines where value in column arg_col_label==arg_label (if arg_label is not None, otherwise read every line). Return [ results_dt, results_qty ] lists, sorted chronologicaly 
     def _ReadData(self, arg_files_list, arg_label, arg_col_dt, arg_col_qty, arg_col_label, arg_delim):
     #   {{{
+        """Given a list of files, get as a list qtys and datetimes (from columns arg_col_qty and arg_col_dt), for lines where value in column arg_col_label==arg_label (if arg_label is not None, otherwise read every line). Return [ results_dt, results_qty ] lists, sorted chronologicaly"""
         _log.debug("arg_label=(%s)" % str(arg_label))
         _log.debug("cols: (dt, qty, label)=(%s, %s, %s), delim=(%s)" % (arg_col_dt, arg_col_qty, arg_col_label, arg_delim))
         results_dt = []
@@ -214,31 +218,33 @@ class TimePlot(object):
             loop_filestr = self._DecryptGPGFileToString(loop_filepath)
             for loop_line in loop_filestr.split("\n"):
                 loop_line_split = loop_line.split(arg_delim)
-                #_log.debug("loop_line_split=(%s)" % str(loop_line_split))
-                if (arg_label is None) or (loop_line_split[arg_col_label] == arg_label):
-                    loop_qty = None
-                    if (arg_col_qty is not None):
-                        loop_qty_str = loop_line_split[arg_col_qty]
-                        loop_qty = Decimal(loop_qty_str)
-                    loop_dt_str = loop_line_split[arg_col_dt]
-                    loop_dt_str = self._Fix_Datetime_Format(loop_dt_str)
-                    loop_dt = dateparser.parse(loop_dt_str)
-                    if (loop_dt is None):
-                        raise Exception("Failed to parse loop_dt_str=(%s)" % str(loop_dt_str))
-                    #_log.debug("loop_dt_str=(%s)" % str(loop_dt_str))
-                    #_log.debug("loop_qty=(%s)" % str(loop_qty))
-                    #_log.debug("loop_dt=(%s)" % str(loop_dt))
-                    results_dt.append(loop_dt)
-                    results_qty.append(loop_qty)
+                if not (len(loop_line_split) <= 1):
+                    #_log.debug("loop_line_split=(%s)" % str(loop_line_split))
+                    if (arg_label is None) or (loop_line_split[arg_col_label] == arg_label):
+                        loop_qty = None
+                        if (arg_col_qty is not None):
+                            loop_qty_str = loop_line_split[arg_col_qty]
+                            loop_qty = Decimal(loop_qty_str)
+                        loop_dt_str = loop_line_split[arg_col_dt]
+                        loop_dt_str = self._Fix_Datetime_Format(loop_dt_str)
+                        loop_dt = dateparser.parse(loop_dt_str)
+                        if (loop_dt is None):
+                            raise Exception("Failed to parse loop_dt_str=(%s)" % str(loop_dt_str))
+                        #_log.debug("loop_dt_str=(%s)" % str(loop_dt_str))
+                        #_log.debug("loop_qty=(%s)" % str(loop_qty))
+                        #_log.debug("loop_dt=(%s)" % str(loop_dt))
+                        results_dt.append(loop_dt)
+                        results_qty.append(loop_qty)
+
         if (len(results_dt) != len(results_qty)):
             raise Exception("mismatch, len(results_dt)=(%s), len(results_qty)=(%s)" % (str(len(results_dt)), str(len(results_qty))))
         _log.debug("len(results)=(%s)" % str(len(results_dt)))
         return [ results_dt, results_qty ]
         #   }}}
 
-    #   About: If datetime is in 'dts' format, i.e: (2021-01-02)-(21-17-11) or (2021-01-02)-(2117-11), transform to iso format 2021-01-02T21:17:11, otherwise return as-is
     def _Fix_Datetime_Format(self, arg_dt_str):
     #   {{{
+        """If datetime is in 'dts' format, i.e: (2021-01-02)-(21-17-11) or (2021-01-02)-(2117-11), transform to iso format 2021-01-02T21:17:11, otherwise return as-is"""
         #   
         regex_dts = r"\((\d{4}-\d{2}-\d{2})\)-\((\d{2})-?(\d{2})-?(\d{2})\)"
         _match_regex = re.match(regex_dts, arg_dt_str)
@@ -313,7 +319,6 @@ class TimePlot(object):
     #    [axes[i].set_ylim(*extrema[i]) for i in range(len(extrema))]
     ##   }}}
 
-
     def PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
     #   {{{
         """Plot list of list of qty values, against single list of time, with labels and colours specified. Show figure if arg_output_dir is None, otherwise save it."""
@@ -387,7 +392,7 @@ class TimePlot(object):
                     loop_ax.plot([_now], [_now_y], marker='o', markersize=3, color=loop_color)
 
         if not (_check_showPlot):
-            _log.warning("_check_showPlot=(%s), skip" % str(_check_showPlot))
+            _log.warning("_check_showPlot=(%s), noting to plot, skip day" % str(_check_showPlot))
             return 
 
         fig.tight_layout()
@@ -405,9 +410,9 @@ class TimePlot(object):
             pass
     #   }}}
 
-    #   About: plot datetimes and corresponding quantities, and save to given dir with given filename. If current datetime is in datetime range, mark it on plot
     def _PlotResultsForDay(self, arg_result_dt, arg_result_qty, arg_output_dir=None, arg_output_fname=None, arg_markNow=False):
     #   {{{
+        """plot datetimes and corresponding quantities, and save to given dir with given filename. If current datetime is in datetime range, mark it on plot"""
     #   TODO: 2021-01-04T14:42:45AEST handle multiple lists for arg_result_qty
         #   Remove timezone from datetimes
         arg_result_dt_noTZ = []
@@ -540,9 +545,9 @@ class TimePlot(object):
             return dt_Range
     #   }}}
 
-    #   About: Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last
     def _GetFiles_Monthly(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
     #   {{{ 
+        """Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last"""
         dt_Range_str = self._GetMonthRange(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
 
         #   Raise exception if arg_data_dir doesn't exist
