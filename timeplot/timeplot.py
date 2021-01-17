@@ -29,6 +29,7 @@ from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #   }}}1
 #   {{{2
 from decaycalc.decaycalc import DecayCalc
+from readblock.readblock import ReadBlock
 
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
@@ -38,13 +39,151 @@ logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_loggin
 class TimePlot(object):
 
     decaycalc = DecayCalc()
+    readblock = ReadBlock()
 
     default_color_options = [ 'tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple' ]
+
+    #   TODO: 2021-01-17T19:58:29AEDT rename schedule related 'Data' in function names
 
     #   Continue: 2021-01-03T17:17:49AEST function, for a given month, and a given list of log labels, read all log data for that month, and previous month, then calculate and plot quantities for all given label item for each day in that month
     ##   Given <arguments>, (call methods to) get lists of data from file(s) in arg_data_dir, and return list of calculated qtys remaining for each datetime in arg_dt_list 
     #def CalculateFromFilesRange_Monthly(self, arg_dt_list, arg_data_dir, arg_halflife, arg_onset, arg_file_prefix, arg_file_postfix):
     #    pass
+
+    #   TODO: 2021-01-17T20:11:30AEDT start and done times, per day, from ~/.vimh
+
+    def AnalyseTasklogDataForMonth(self, arg_tasklog_dir, arg_prefix, arg_postfix, arg_date_month, arg_output_dir):
+    #   {{{
+        """Get and plot start/done times from a tasklog for a given month"""
+        if (isinstance(arg_date_month, str)):
+            arg_date_month = dateparser.parse(arg_date_month)
+            arg_date_month = arg_date_month.replace(day=1)
+        y = arg_date_month.year
+        m = arg_date_month.month
+        days_list = ['{:04d}-{:02d}-{:02d}'.format(y, m, d) for d in range(1, calendar.monthrange(y, m)[1] + 1)]
+        monthly_str = arg_date_month.strftime("%Y-%m")
+        monthly_path_tasklog = os.path.join(arg_tasklog_dir, arg_prefix + monthly_str + arg_postfix)
+        if not (os.path.isfile(monthly_path_tasklog)):
+            raise FileNotFoundError("Not found, monthly_path_tasklog=(%s)" % str(monthly_path_tasklog))
+        _log.debug("monthly_path_tasklog=(%s)" % str(monthly_path_tasklog))
+        file_results_list = self.readblock.SearchTasklogs_DefaultSearchLabels( [ monthly_path_tasklog ] )
+        #_log.debug("results_list=(%s)" % str(results_list))
+
+        results_byday_date = []
+        results_byday_starttime = []
+        results_byday_timedone = []
+        results_byday_quality = []
+        results_byday_elapsed = []
+
+        results_starttime = []
+        results_timedone = []
+        results_elapsed = []
+        results_quality = []
+
+        for results_list in file_results_list:
+            for loop_result in results_list:
+                try:
+                    loop_starttime = loop_result['starttime']
+                    loop_starttime = dateparser.parse(loop_starttime)
+                    loop_timedone = loop_result['timedone']
+                    loop_timedone = dateparser.parse(loop_timedone)
+                    loop_quality = loop_result['quality']
+                except Exception as e:
+                    _log.error("%s, %s" % (type(e), str(e)))
+                    raise Exception("Dict item (starttime, timedone, quality) not found for results of SearchTasklogs_DefaultSearchLabels")
+                results_starttime.append(loop_starttime)
+                results_timedone.append(loop_timedone)
+                results_quality.append(loop_quality)
+
+        for loop_day in days_list:
+            _log.debug("loop_day=(%s)" % str(loop_day))
+            results_byday_date.append(loop_day)
+            loop_day_start, loop_day_end = self.decaycalc._DayStartAndEndTimes_FromDate(loop_day)
+            #_log.debug("loop_day_start=(%s)" % str(loop_day_start))
+            #_log.debug("loop_day_end=(%s)" % str(loop_day_end))
+
+            loop_results_starttime = []
+            loop_results_timedone = []
+            loop_results_quality = []
+            loop_results_elapsed = []
+
+            #   TODO: 2021-01-17T20:00:05AEDT optimise -> parse each starttime/timedone only once, not once for each day
+
+            for loop_starttime, loop_timedone, loop_quality in zip(results_starttime, results_timedone, results_quality):
+                if (loop_starttime.tzinfo is None) and (loop_day_start.tzinfo is not None):
+                    loop_starttime = loop_starttime.replace(tzinfo = loop_day_start.tzinfo)
+                if (loop_day_start.tzinfo is None) and (loop_starttime.tzinfo is not None):
+                    loop_day_start = loop_day_start.replace(tzinfo = loop_starttime.tzinfo)
+                if (loop_day_end.tzinfo is None) and (loop_starttime.tzinfo is not None):
+                    loop_day_end = loop_day_end.replace(tzinfo = loop_starttime.tzinfo)
+
+                if (loop_starttime >= loop_day_start) and (loop_starttime <= loop_day_end):
+                    try:
+                        loop_elapsed = (loop_timedone - loop_starttime)
+                    except Exception as e:
+                        loop_elapsed = None
+                    if (loop_elapsed is not None):
+                        loop_results_starttime.append(loop_starttime)
+                        loop_results_timedone.append(loop_timedone)
+                        loop_results_quality.append(loop_quality)
+                        loop_results_elapsed.append(loop_elapsed)
+                    else:
+                        _log.warning("loop_elapsed is None, skip, for loop_starttime=(%s), loop_timedone=(%s)" % (str(loop_starttime), str(loop_timedone)))
+
+            results_byday_starttime.append(loop_results_starttime)
+            results_byday_timedone.append(loop_results_timedone)
+            results_byday_quality.append(loop_results_quality)
+            results_byday_elapsed.append(loop_results_elapsed)
+
+            self._PlotTaskBlocksForDay(loop_results_starttime, loop_results_timedone, loop_results_quality, loop_day, arg_output_dir)
+
+        #_log.debug("results_byday_starttime=(%s)" % pprint.pformat(results_byday_starttime))
+        #_log.debug("results_byday_timedone=(%s)" % pprint.pformat(results_byday_timedone))
+        #_log.debug("results_byday_quality=(%s)" % pprint.pformat(results_byday_quality))
+        #_log.debug("results_byday_elapsed=(%s)" % pprint.pformat(results_byday_elapsed))
+        #   }}}
+
+    #   TODO: 2021-01-17T20:43:06AEDT use time-quality as y-values
+    def _PlotTaskBlocksForDay(self, arg_starttimes, arg_timedones, arg_qualities, arg_date, arg_output_dir):
+    #   {{{
+        """Given list of starttimes, timedones, qualities, from a given day, plot intervals between start/done times for that day"""
+        _day_start, _day_end = self.decaycalc._DayStartAndEndTimes_FromDate(arg_date)
+        _log.debug("arg_date=(%s)" % str(arg_date))
+        _log.debug("_day_start=(%s), _day_end=(%s)" % (str(_day_start), str(_day_end)))
+        _log.debug("len(arg_starttimes)=(%s)" % len(arg_starttimes))
+
+        _result_dt_list_pandas  = pandas.date_range(start=_day_start, end=_day_end, freq="min")
+        _result_y = [0] * len(_result_dt_list_pandas)
+
+        #   Plot a square for each pair in arg_starttimes/arg_timedones, with height given by arg_qualities
+        plot_save_path = os.path.join(arg_output_dir, arg_date + "-tasklog.png")
+        mpl_logger = logging.getLogger('matplotlib')
+        mpl_logger.setLevel(logging.WARNING)
+        fig, ax = plt.subplots()
+        ax.set_xlim(_day_start, _day_end)
+
+        for loop_startime, loop_timedone, loop_quality in zip(arg_starttimes, arg_timedones, arg_qualities):
+            loop_startime = loop_startime.replace(tzinfo=None)
+            loop_timedone = loop_timedone.replace(tzinfo=None)
+            #_log.debug("quality=(%s)" % str(loop_quality))
+            #_log.debug("loop_startime=(%s)" % str(loop_startime))
+            for loop_i, loop_x in enumerate(_result_dt_list_pandas):
+                pass
+                #_log.debug("loop_x=(%s)" % str(loop_x))
+                if (loop_x > loop_startime and loop_x < loop_timedone):
+                    _result_y[loop_i] = 1
+
+        ax.plot(_result_dt_list_pandas, _result_y)
+
+        myFmt = DateFormatter("%H")
+        ax.xaxis.set_major_formatter(myFmt)
+        ax.xaxis.set_major_locator(MultipleLocator((1/24)))
+        ax.yaxis.set_minor_locator(AutoMinorLocator(1))
+        fig.autofmt_xdate()
+        plt.savefig(plot_save_path)
+        plt.close()
+    #   }}}
+
 
     def AnalyseDataByMonthForAll(self, arg_data_dir, arg_file_prefix, arg_file_postfix, arg_labels_list, arg_halflives_list, arg_onset_lists, arg_col_dt, arg_col_qty, arg_col_label, arg_col_delim, arg_output_dir, arg_color_options=None, flag_restrictFuture=True):
     #   {{{
@@ -227,9 +366,25 @@ class TimePlot(object):
                             loop_qty = Decimal(loop_qty_str)
                         loop_dt_str = loop_line_split[arg_col_dt]
                         loop_dt_str = self._Fix_Datetime_Format(loop_dt_str)
-                        loop_dt = dateparser.parse(loop_dt_str)
+
+                        #   Attempt parsing with datetime.datetime.strptime() first, on account of slowness of dateparser.parse
+                        loop_dt = None
+                        if (loop_dt is None):
+                            try:
+                                loop_dt = datetime.datetime.strptime(loop_dt_str, "%Y-%m-%dT%H:%M:%S%Z")
+                            except Exception as e:
+                                loop_dt = None
+                        if (loop_dt is None):
+                            try:
+                                loop_dt = datetime.datetime.strptime(loop_dt_str, "%Y-%m-%dT%H:%M:%S")
+                            except Exception as e:
+                                loop_dt = None
+
+                        if (loop_dt is None):
+                            loop_dt = dateparser.parse(loop_dt_str)
                         if (loop_dt is None):
                             raise Exception("Failed to parse loop_dt_str=(%s)" % str(loop_dt_str))
+
                         #_log.debug("loop_dt_str=(%s)" % str(loop_dt_str))
                         #_log.debug("loop_qty=(%s)" % str(loop_qty))
                         #_log.debug("loop_dt=(%s)" % str(loop_dt))
@@ -252,72 +407,6 @@ class TimePlot(object):
             arg_dt_str = _match_regex.group(1) + "T" + _match_regex.group(2) + ":" + _match_regex.group(3) + ":" + _match_regex.group(4)
         return arg_dt_str
     #   }}}
-
-    #def align_yaxis_np(self, axes): 
-    ##   {{{
-    #    import numpy as np
-    #    y_lims = np.array([ax.get_ylim() for ax in axes])
-    #    # force 0 to appear on all axes, comment if don't need
-    #    y_lims[:, 0] = y_lims[:, 0].clip(None, 0)
-    #    y_lims[:, 1] = y_lims[:, 1].clip(0, None)
-    #    # normalize all axes
-    #    y_mags = (y_lims[:,1] - y_lims[:,0]).reshape(len(y_lims),1)
-    #    y_lims_normalized = y_lims / y_mags
-    #    # find combined range
-    #    y_new_lims_normalized = np.array([np.min(y_lims_normalized), np.max(y_lims_normalized)])
-    #    # denormalize combined range to get new axes
-    #    new_lims = y_new_lims_normalized * y_mags
-    #    for i, ax in enumerate(axes):
-    #        ax.set_ylim(new_lims[i])    
-    ##   }}}
-
-    #def align_yaxis_np(self, axes):
-    ##   {{{
-    #    """Align zeros of the two axes, zooming them out by same ratio"""
-    #    import numpy as np
-    #    #   LINK: https://stackoverflow.com/questions/10481990/matplotlib-axis-with-two-scales-shared-origin
-    #    axes = np.array(axes)
-    #    extrema = np.array([ax.get_ylim() for ax in axes])
-    #    # reset for divide by zero issues
-    #    for i in range(len(extrema)):
-    #        if np.isclose(extrema[i, 0], 0.0):
-    #            extrema[i, 0] = -1
-    #        if np.isclose(extrema[i, 1], 0.0):
-    #            extrema[i, 1] = 1
-    #    # upper and lower limits
-    #    lowers = extrema[:, 0]
-    #    uppers = extrema[:, 1]
-    #    # if all pos or all neg, don't scale
-    #    all_positive = False
-    #    all_negative = False
-    #    if lowers.min() > 0.0:
-    #        all_positive = True
-    #    if uppers.max() < 0.0:
-    #        all_negative = True
-    #    if all_negative or all_positive:
-    #        # don't scale
-    #        return
-    #    # pick "most centered" axis
-    #    res = abs(uppers+lowers)
-    #    min_index = np.argmin(res)
-    #    # scale positive or negative part
-    #    multiplier1 = abs(uppers[min_index]/lowers[min_index])
-    #    multiplier2 = abs(lowers[min_index]/uppers[min_index])
-    #    for i in range(len(extrema)):
-    #        # scale positive or negative part based on which induces valid
-    #        if i != min_index:
-    #            lower_change = extrema[i, 1] * -1*multiplier2
-    #            upper_change = extrema[i, 0] * -1*multiplier1
-    #            if upper_change < extrema[i, 1]:
-    #                extrema[i, 0] = lower_change
-    #            else:
-    #                extrema[i, 1] = upper_change
-    #        # bump by 10% for a margin
-    #        extrema[i, 0] *= 1.1
-    #        extrema[i, 1] *= 1.1
-    #    # set axes limits
-    #    [axes[i].set_ylim(*extrema[i]) for i in range(len(extrema))]
-    ##   }}}
 
     def PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
     #   {{{
@@ -401,12 +490,14 @@ class TimePlot(object):
         if not (arg_output_dir is None):
             _path_save = os.path.join(arg_output_dir, arg_output_fname + ".png")
             plt.savefig(_path_save)
+            plt.close()
             _log.debug("_path_save=(%s)" % str(_path_save))
             return _path_save
         else:
             #plt.ioff()
             #plt.show(block=False)
             plt.show()
+            plt.close()
             pass
     #   }}}
 
@@ -441,6 +532,7 @@ class TimePlot(object):
         ax.yaxis.set_minor_locator(AutoMinorLocator(1))
         fig.autofmt_xdate()
         plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
+        plt.close()
     #   }}}
 
     def _EncryptString2GPGByteArray(self, text_str, gpg_key_id, flag_ascii_armor=False):
