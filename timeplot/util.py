@@ -35,82 +35,32 @@ logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_loggin
 class TimePlotUtils:
 
     @staticmethod
-    def _GPGEncryptString2ByteArray(text_str, gpg_key_id, flag_ascii_armor=False):
+    def _GetDaysPerMonthDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True):
     #   {{{
-        """Take a string, encrypt that string with the system gpg keychain, and return result as a bytearray"""
-        t_start = time.time()
-        #   convert string(text_str) -> bytearray(cmd_encrypt_input)
-        cmd_encrypt_input = bytearray()
-        cmd_encrypt_input.extend(text_str.encode())
-        #   gpg encrypt arguments
-        cmd_gpg_encrypt = [ "gpg", "-o", "-", "-q", "--encrypt", "--recipient", gpg_key_id ]
-        if (flag_ascii_armor == True):
-            cmd_gpg_encrypt.append("--armor")
-        #   Use Popen, call cmd_gpg_encrypt, using PIPE for stdin/stdout/stderr
-        p = Popen(cmd_gpg_encrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-        result_data_encrypt, result_stderr = p.communicate(input=cmd_encrypt_input)
-        result_stderr = result_stderr.decode()
-        rc = p.returncode
-        if (rc != 0):
-            raise Exception("Failed to encrypt, rc=(%s)" % str(rc))
-        t_end = time.time()
-        t_elapsed = round(t_end - t_start, 2)
-        #   printdebug:
-        _log.debug("encrypt dt=(%s)" % (str(t_elapsed)))
-        _log.debug("cmd_gpg_encrypt=(%s)" % str(cmd_gpg_encrypt))
-        _log.debug("result_stderr=(%s)" % str(result_stderr))
-        _log.debug("text_str_len=(%s)" % str(len(text_str)))
-        _log.debug("result_data_encrypt_len=(%s)" % str(len(result_data_encrypt)))
-        return result_data_encrypt
-    #   }}}
-
-    @staticmethod
-    def _GPGDecryptFileToString(arg_path_file):
-    #   {{{
-        """Given a path to gpg encrypted file, decrypt file using system gpg/keychain, raise Exception if file is not decryptable, or if it doesn't exist"""
-        _log.debug("file=(%s)" % str(os.path.basename(arg_path_file)))
-        cmd_gpg_decrypt = ["gpg", "-q", "--decrypt", arg_path_file ]
-        p = Popen(cmd_gpg_decrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-        result_data_decrypt, result_stderr = p.communicate()
-        result_str = result_data_decrypt.decode()
-        result_stderr = result_stderr.decode()
-        rc = p.returncode
-        if (rc != 0):
-            raise Exception("gpg decrypt non-zero returncode=(%s), result_stderr=(%s)" % (str(rc), str(result_stderr)))
-        _log.debug("lines=(%s)" % str(result_str.count("\n")))
-        return result_str
-    #   }}}
-
-    @staticmethod
-    def _Fix_DatetimeStr(arg_dt_str):
-    #   {{{
-        """If datetime string is in 'dts' format, i.e: '(2021-01-02)-(21-17-11)' or '(2021-01-02)-(2117-11)', transform to iso format '2021-01-02T21:17:11', otherwise return as-is"""
-        regex_dts = r"\((\d{4}-\d{2}-\d{2})\)-\((\d{2})-?(\d{2})-?(\d{2})\)"
-        _match_regex = re.match(regex_dts, arg_dt_str)
-        if (_match_regex is not None):
-            arg_dt_str = _match_regex.group(1) + "T" + _match_regex.group(2) + ":" + _match_regex.group(3) + ":" + _match_regex.group(4)
-        return arg_dt_str
-    #   }}}
-
-    @staticmethod
-    def _GetFiles_FromMonthlyRange(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
-    #   {{{ 
-        """Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last"""
-        dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
-        #   Raise exception if arg_data_dir doesn't exist
-        if not os.path.isdir(arg_data_dir):
-            raise Exception("dir not found arg_data_dir=(%s)" % str(arg_data_dir))
-        #   Get list of files of format 'arg_file_prefix + date_str + arg_file_postfix' which exist, with warning for those which don't. Raise exception if no files are found
-        located_filepaths = []
-        for loop_dt_str in dt_Range_str:
-            loop_candidate_filename = arg_file_prefix + loop_dt_str + arg_file_postfix
-            loop_candidate_filepath = os.path.join(arg_data_dir, loop_candidate_filename)
-            if os.path.isfile(loop_candidate_filepath):
-                located_filepaths.append(loop_candidate_filepath)
-        _log.debug("located_filepaths:\n%s" % pprint.pformat(located_filepaths))
-        if len(located_filepaths) == 0:
-            raise Exception("no files located")
-        return located_filepaths
+        """Return list of lists 'calendar list', with one list for each month, containing the days of that month falling inside specified date range"""
+        if (isinstance(arg_dt_first, str)):
+            arg_dt_first = dateparser.parse(arg_dt_first)
+        if (isinstance(arg_dt_last, str)):
+            arg_dt_last = dateparser.parse(arg_dt_last)
+        arg_dt_first = arg_dt_first.replace(tzinfo=None)
+        arg_dt_last = arg_dt_last.replace(tzinfo=None)
+        _dt_format_output = '%Y-%m-%d'
+        calendar_list = []
+        months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last)
+        for loop_month in months_list:
+            _log.debug("loop_month=(%s)" % str(loop_month))
+            loop_days_in_month = pandas.Period(loop_month).days_in_month
+            _log.debug("loop_days_in_month=(%s)" % str(loop_days_in_month))
+            loop_days_list = [ x.to_pydatetime() for x in pandas.date_range(start=loop_month, freq='d', periods=loop_days_in_month) ]
+            #_log.debug("loop_days_list=(%s)" % str(loop_days_list))
+            loop_month_list = []
+            for loop_day in loop_days_list:
+                if (loop_day >= arg_dt_first) and (loop_day <= arg_dt_last):
+                    if (arg_result_str):
+                        loop_day = loop_day.strftime(_dt_format_output)
+                    loop_month_list.append(loop_day)
+            calendar_list.append(loop_month_list)
+        return calendar_list
     #   }}}
 
     @staticmethod
@@ -130,12 +80,12 @@ class TimePlotUtils:
         _dt_freq = 'MS'
         _log.debug("arg_includeMonthBefore=(%s)" % str(arg_includeMonthBefore))
         if (arg_includeMonthBefore):
-            arg_dt_beforeFirst = arg_dt_first + relativedelta(months = -1)
+            arg_dt_beforeFirst = arg_dt_first + relativedelta(months=-1)
             arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
             arg_dt_first = arg_dt_beforeFirst
-        _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
-        _log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
-        dt_Range = [ x for x in pandas.date_range(start=arg_dt_beforeFirst.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
+        #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
+        #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
+        dt_Range = [ x.to_pydatetime() for x in pandas.date_range(start=arg_dt_first.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
         if (arg_result_str):
             dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
             _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
@@ -143,6 +93,28 @@ class TimePlotUtils:
         else:
             _log.debug("dt_Range=(%s)" % str(dt_Range))
             return dt_Range
+    #   }}}
+
+    @staticmethod
+    def _GetFiles_FromMonthlyRange(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
+    #   {{{ 
+        """Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last"""
+        dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
+        #   Raise exception if arg_data_dir doesn't exist
+        if not os.path.isdir(arg_data_dir):
+            raise Exception("dir not found arg_data_dir=(%s)" % str(arg_data_dir))
+        #   Get list of files of format 'arg_file_prefix + date_str + arg_file_postfix' which exist, with warning for those which don't. Raise exception if no files are found
+        located_filepaths = []
+        for loop_dt_str in dt_Range_str:
+            loop_candidate_filename = arg_file_prefix + loop_dt_str + arg_file_postfix
+            _log.debug("loop_candidate_filename=(%s)" % str(loop_candidate_filename))
+            loop_candidate_filepath = os.path.join(arg_data_dir, loop_candidate_filename)
+            if os.path.isfile(loop_candidate_filepath):
+                located_filepaths.append(loop_candidate_filepath)
+        _log.debug("located_filepaths:\n%s" % pprint.pformat(located_filepaths))
+        if len(located_filepaths) == 0:
+            raise Exception("no files located")
+        return located_filepaths
     #   }}}
 
     @staticmethod
@@ -187,6 +159,64 @@ class TimePlotUtils:
         filematches_list.sort()
         _log.debug("filematches_list:\n%s" % pprint.pformat(filematches_list))
         return filematches_list
+    #   }}}
+
+    @staticmethod
+    def _Fix_DatetimeStr(arg_dt_str):
+    #   {{{
+        """If datetime string is in 'dts' format, i.e: '(2021-01-02)-(21-17-11)' or '(2021-01-02)-(2117-11)', transform to iso format '2021-01-02T21:17:11', otherwise return as-is"""
+        regex_dts = r"\((\d{4}-\d{2}-\d{2})\)-\((\d{2})-?(\d{2})-?(\d{2})\)"
+        _match_regex = re.match(regex_dts, arg_dt_str)
+        if (_match_regex is not None):
+            arg_dt_str = _match_regex.group(1) + "T" + _match_regex.group(2) + ":" + _match_regex.group(3) + ":" + _match_regex.group(4)
+        return arg_dt_str
+    #   }}}
+
+    @staticmethod
+    def _GPGEncryptString2ByteArray(text_str, gpg_key_id, flag_ascii_armor=False):
+    #   {{{
+        """Take a string, encrypt that string with the system gpg keychain, and return result as a bytearray"""
+        t_start = time.time()
+        #   convert string(text_str) -> bytearray(cmd_encrypt_input)
+        cmd_encrypt_input = bytearray()
+        cmd_encrypt_input.extend(text_str.encode())
+        #   gpg encrypt arguments
+        cmd_gpg_encrypt = [ "gpg", "-o", "-", "-q", "--encrypt", "--recipient", gpg_key_id ]
+        if (flag_ascii_armor == True):
+            cmd_gpg_encrypt.append("--armor")
+        #   Use Popen, call cmd_gpg_encrypt, using PIPE for stdin/stdout/stderr
+        p = Popen(cmd_gpg_encrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        result_data_encrypt, result_stderr = p.communicate(input=cmd_encrypt_input)
+        result_stderr = result_stderr.decode()
+        rc = p.returncode
+        if (rc != 0):
+            raise Exception("Failed to encrypt, rc=(%s)" % str(rc))
+        t_end = time.time()
+        t_elapsed = round(t_end - t_start, 2)
+        #   printdebug:
+        _log.debug("encrypt dt=(%s)" % (str(t_elapsed)))
+        _log.debug("cmd_gpg_encrypt=(%s)" % str(cmd_gpg_encrypt))
+        _log.debug("result_stderr=(%s)" % str(result_stderr))
+        _log.debug("text_str_len=(%s)" % str(len(text_str)))
+        _log.debug("result_data_encrypt_len=(%s)" % str(len(result_data_encrypt)))
+        return result_data_encrypt
+    #   }}}
+
+    @staticmethod
+    def _GPGDecryptFileToString(arg_path_file):
+    #   {{{
+        """Given a path to gpg encrypted file, decrypt file using system gpg/keychain, raise Exception if file is not decryptable, or if it doesn't exist"""
+        _log.debug("file=(%s)" % str(os.path.basename(arg_path_file)))
+        cmd_gpg_decrypt = ["gpg", "-q", "--decrypt", arg_path_file ]
+        p = Popen(cmd_gpg_decrypt, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        result_data_decrypt, result_stderr = p.communicate()
+        result_str = result_data_decrypt.decode()
+        result_stderr = result_stderr.decode()
+        rc = p.returncode
+        if (rc != 0):
+            raise Exception("gpg decrypt non-zero returncode=(%s), result_stderr=(%s)" % (str(rc), str(result_stderr)))
+        _log.debug("lines=(%s)" % str(result_str.count("\n")))
+        return result_str
     #   }}}
 
 #   }}}1
