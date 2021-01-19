@@ -73,7 +73,6 @@ class Test_DecayCalc(unittest.TestCase):
 
     _test_postfix = "\n"
 
-
     #day_analyse = dateparser.parse("2021-01-04T00:00:00AEST")
     day_analyse = dateparser.parse("2021-01-03")
 
@@ -126,7 +125,7 @@ class Test_DecayCalc(unittest.TestCase):
         plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
 
     #   Splits/SplitSum tests
-    if (False):
+    if (True):
         def test_AnalyseVimhSample(self):
             _vimh_sample_3day = self._getPath_TestData("vimh-3daysample.txt")
             _log.debug("_vimh_sample_3day=(%s)" % str(_vimh_sample_3day))
