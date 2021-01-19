@@ -29,6 +29,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #   }}}1
 #   {{{2
+import multiprocessing
 #from timeplot.util import _GPGEncryptString2ByteArray, _GPGDecryptFileToString, _Fix_DatetimeStr, _GetFiles_FromMonthlyRange
 from timeplot.util import TimePlotUtils
 from timeplot.decaycalc import DecayCalc
@@ -80,17 +81,15 @@ class PlotDecayQtys(object):
         range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         _now = datetime.datetime.now()
-
         if (len(range_calendar_list) != len(range_months_list)):
             raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
-
         for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
             #loop_month_previous = loop_month + relativedelta(months=-1)
             loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_month, loop_month, True)
             data_dt_lists = dict()
             data_qty_lists = dict()
             for loop_label in self._data_labels:
-                loop_data_dt_list, loop_data_qty_list = self._ReadData(loop_files_list, loop_label)
+                loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
                 data_dt_lists[loop_label] = loop_data_dt_list
                 data_qty_lists[loop_label] = loop_data_qty_list
             for loop_day in loop_days_list:
@@ -100,6 +99,48 @@ class PlotDecayQtys(object):
                     break
                 self.PlotDaily_DecayQtys(loop_day, data_dt_lists, data_qty_lists)
     #   }}}
+
+    #def PlotDaily_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end, arg_restrictFuture=True):
+    ##   {{{
+    #    range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+    #    range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+    #    threads_num = 2
+    #    sublists_range_calendar_list = list(TimePlotUtils.DivideList(range_calendar_list, threads_num))
+    #    sublists_range_months_list = list(TimePlotUtils.DivideList(range_months_list, threads_num))
+    #    manager = multiprocessing.Manager()
+    #    return_dict = manager.dict()
+    #    jobs = []
+    #    for i, (loop_sublist_month, loop_sublist_calendar) in enumerate(zip(sublists_range_months_list, sublists_range_calendar_list)):
+    #        _log.debug("i=(%s)" % str(i))
+    #        p = multiprocessing.Process(target=self.PlotDaily_DecayQtys_ForDateRange_Worker, args=(i, loop_sublist_month, loop_sublist_calendar, arg_restrictFuture))
+    #        jobs.append(p)
+    #        p.start()
+    #    for proc in jobs:
+    #        proc.join()
+    ##   }}}
+    #def PlotDaily_DecayQtys_ForDateRange_Worker(self, proc_num, range_months_list, range_calendar_list, arg_restrictFuture=True):
+    ##   {{{
+    #    #range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+    #    #range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+    #    _now = datetime.datetime.now()
+    #    if (len(range_calendar_list) != len(range_months_list)):
+    #        raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
+    #    for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
+    #        #loop_month_previous = loop_month + relativedelta(months=-1)
+    #        loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_month, loop_month, True)
+    #        data_dt_lists = dict()
+    #        data_qty_lists = dict()
+    #        for loop_label in self._data_labels:
+    #            loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
+    #            data_dt_lists[loop_label] = loop_data_dt_list
+    #            data_qty_lists[loop_label] = loop_data_qty_list
+    #        for loop_day in loop_days_list:
+    #            loop_day_date = dateparser.parse(loop_day)
+    #            if (arg_restrictFuture) and (_now < loop_day_date):
+    #                _log.debug("restrict future, break")
+    #                break
+    #            self.PlotDaily_DecayQtys(loop_day, data_dt_lists, data_qty_lists)
+    ##   }}}
 
     def PlotDaily_DecayQtys(self, loop_day, data_dt_lists, data_qty_lists):
     #   {{{
@@ -117,7 +158,7 @@ class PlotDecayQtys(object):
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass
 
-    def _ReadData(self, arg_files_list, arg_label):
+    def _ReadQtyScheduleData(self, arg_files_list, arg_label):
     #   {{{
         """Given a list of files, get as lists qtys and datetimes (from columns self.data_column_qty and self.data_column_dt, columns defined by self.data_delim), for lines where value in column self.data_column_label==arg_label (if arg_label is None, read every line). Return [ results_dt, results_qty ]"""
         #   validate data_column_dt, data_column_qty, data_column_label

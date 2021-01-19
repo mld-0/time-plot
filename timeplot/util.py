@@ -219,5 +219,13 @@ class TimePlotUtils:
         return result_str
     #   }}}
 
+    @staticmethod
+    def DivideList(l, n):
+        """Yield n number of sequential chunks from l."""
+        d, r = divmod(len(l), n)
+        for i in range(n):
+            si = (d+1)*(i if i < r else r) + d*(0 if i < r else i - r)
+            yield l[si:si+(d+1 if i < r else d)]
+
 #   }}}1
 

@@ -25,6 +25,8 @@ from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from matplotlib.dates import DateFormatter
 #   }}}1
+import multiprocessing
+from timeplot.util import TimePlotUtils
 #   {{{2
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
@@ -40,9 +42,65 @@ class DecayCalc(object):
     #def CalculateFromFilesRange_Monthly(self, arg_dt_list, arg_data_dir, arg_halflife, arg_onset, arg_file_prefix, arg_file_postfix):
     #    pass
 
+    #def CalculateRangeForDay(self, arg_day, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
+    ##   {{{
+    #    """Given a day (either as string or python datetime), and lists of datetimes/qtys, calculate qty for each minute of given day and return datetime range with interval minutes as list and corresponding list of qtys"""
+    #    day_start, day_end = self._DayStartAndEndTimes_FromDate(arg_day)
+    #    _result_dt_list_pandas  = pandas.date_range(start=day_start, end=day_end, freq="min")
+    #    calc_threads = 3
+    #    sublists_result_dt_list_pandas = list(TimePlotUtils.DivideList(_result_dt_list_pandas, calc_threads))
+
+    #    manager = multiprocessing.Manager()
+    #    returndict = manager.dict()
+    #    jobs = []
+
+    #    for i, loop_sublist in enumerate(sublists_result_dt_list_pandas):
+    #        p = multiprocessing.Process(target=self.CalculateRangeForDay_Worker, args=(i, returndict, loop_sublist, arg_dt_items, arg_qty_items, arg_halflife, arg_onset))
+    #        jobs.append(p)
+    #        p.start()
+
+    #    for proc in jobs:
+    #        proc.join()
+
+    #    _result_dt_list = []
+    #    _result_qty_list = []
+
+    #    result_vals = []
+    #    for i in range(calc_threads):
+    #        #result_vals += returndict[i]
+    #        _result_dt_list += returndict[i][0]
+    #        _result_qty_list += returndict[i][1]
+    #        #_log.debug("len(returndict[i][1])=(%s)" % len(returndict[i][1]))
+    #        #print(returndict)
+
+    #    #_log.debug("len(_result_dt_list)=(%s)" % len(_result_dt_list))
+
+    #    #_log.debug("len(sublists_result_dt_list_pandas)=(%s)" % len(sublists_result_dt_list_pandas))
+    #    #_result_dt_list = []
+    #    #_result_qty_list = []
+    #    #for loop_dt_pandas in _result_dt_list_pandas:
+    #    #    loop_dt = loop_dt_pandas.to_pydatetime()
+    #    #    loop_qty = self.CalculateAtDT(loop_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset)
+    #    #    _result_dt_list.append(loop_dt)
+    #    #    _result_qty_list.append(loop_qty)
+    #    return [ _result_dt_list, _result_qty_list ]
+    ##   }}}
+
+    #def CalculateRangeForDay_Worker(self, procnum, returndict, _result_dt_list_pandas, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
+    ##   {{{
+    #    _result_dt_list = []
+    #    _result_qty_list = []
+    #    for loop_dt_pandas in _result_dt_list_pandas:
+    #        loop_dt = loop_dt_pandas.to_pydatetime()
+    #        loop_qty = self.CalculateAtDT(loop_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset)
+    #        _result_dt_list.append(loop_dt)
+    #        _result_qty_list.append(loop_qty)
+    #    #return [ _result_dt_list, _result_qty_list ]
+    #    returndict[procnum] = [ _result_dt_list, _result_qty_list ]
+    ##   }}}
+
     def CalculateRangeForDay(self, arg_day, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
     #   {{{
-        """Given a day (either as string or python datetime), and lists of datetimes/qtys, calculate qty for each minute of given day and return datetime range with interval minutes as list and corresponding list of qtys"""
         day_start, day_end = self._DayStartAndEndTimes_FromDate(arg_day)
         _result_dt_list_pandas  = pandas.date_range(start=day_start, end=day_end, freq="min")
         _result_dt_list = []
@@ -87,15 +145,15 @@ class DecayCalc(object):
         ax.yaxis.set_minor_locator(AutoMinorLocator(1))
         fig.autofmt_xdate()
         plt.savefig(os.path.join(arg_output_dir, arg_output_fname + ".png"))
+        plt.close()
     #   }}}
 
+    #   TODO: 2021-01-18T21:59:45AEDT multi-threaded processing of calculation loop
     def CalculateAtDT(self, arg_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
     #   {{{
         """given lists arg_qty_items/arg_dt_items, (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
         result_qty = Decimal(0.0)
-        #_log.debug("arg_dt=(%s)" % str(arg_dt))
         for loop_dt, loop_qty in zip(arg_dt_items, arg_qty_items):
-            #_log.debug("loop_dt=(%s)" % str(loop_dt))
             #   Reconcile timezones 
             #   {{{
             if (loop_dt.tzinfo is None) and (arg_dt.tzinfo is not None):
@@ -105,20 +163,74 @@ class DecayCalc(object):
             #   }}}
             #   get difference between arg_dt and loop_dt in seconds
             loop_delta_s = (arg_dt - loop_dt).total_seconds()
-            #_log.debug("loop_delta_s=(%s)" % str(loop_delta_s))
             loop_result_qty = Decimal(0.0)
             if (loop_delta_s > arg_onset) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
                 loop_hl_fraction = (loop_delta_s - arg_onset) / arg_halflife
                 loop_result_qty = loop_qty * Decimal(0.5) ** Decimal(loop_hl_fraction)
-                #_log.debug("loop_hl_fraction=(%s)" % str(loop_hl_fraction))
             elif (loop_delta_s > 0) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
                 loop_result_qty = loop_qty * Decimal(loop_delta_s / arg_onset)
-            #_log.debug("loop_result_qty=(%s)" % str(loop_result_qty))
             result_qty += loop_result_qty
-        #_log.debug("result_qty=(%s)" % str(result_qty))
         return result_qty
     #   }}}
-    
+
+    ##   TODO: 2021-01-18T21:59:45AEDT multi-threaded processing of calculation loop
+    #def CalculateAtDT(self, arg_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
+    ##   {{{
+    #    """given lists arg_qty_items/arg_dt_items, (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
+    #    result_qty = Decimal(0.0)
+    #    thread_num = 4
+    #    sublist_arg_dt_items = list(TimePlotUtils.DivideList(arg_dt_items, thread_num))
+    #    sublist_arg_qty_items = list(TimePlotUtils.DivideList(arg_qty_items, thread_num))
+
+    #    manager = multiprocessing.Manager()
+    #    return_dict = manager.dict()
+    #    jobs = []
+
+    #    for i, (loop_sublist_dt, loop_sublist_qty)  in enumerate(zip(sublist_arg_dt_items, sublist_arg_qty_items)):
+    #        p = multiprocessing.Process(target=self.CalculateAtDT_Worker, args=(i, return_dict, arg_dt, loop_sublist_dt, loop_sublist_qty, arg_halflife, arg_onset))
+    #        jobs.append(p)
+    #        p.start()
+
+    #    for proc in jobs:
+    #        proc.join()
+
+    #    for i in range(thread_num):
+    #        result_qty += return_dict[i]
+
+    #    return result_qty
+
+    ##   }}}
+
+    ##   TODO: 2021-01-18T21:59:45AEDT multi-threaded processing of calculation loop
+    #def CalculateAtDT_Worker(self, proc_num, return_dict, arg_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
+    ##   {{{
+    #    """given lists arg_qty_items/arg_dt_items, (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
+    #    result_qty = Decimal(0.0)
+    #    for loop_dt, loop_qty in zip(arg_dt_items, arg_qty_items):
+    #        #   Reconcile timezones 
+    #        #   {{{
+    #        if (loop_dt.tzinfo is None) and (arg_dt.tzinfo is not None):
+    #            loop_dt = loop_dt.replace(tzinfo = arg_dt.tzinfo)
+    #        elif (arg_dt.tzinfo is None) and (loop_dt.tzinfo is not None):
+    #            arg_dt = arg_dt.replace(tzinfo = loop_dt.tzinfo)
+    #        #   }}}
+    #        #   get difference between arg_dt and loop_dt in seconds
+    #        loop_delta_s = (arg_dt - loop_dt).total_seconds()
+    #        loop_result_qty = Decimal(0.0)
+    #        if (loop_delta_s > arg_onset) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
+    #            loop_hl_fraction = (loop_delta_s - arg_onset) / arg_halflife
+    #            loop_result_qty = loop_qty * Decimal(0.5) ** Decimal(loop_hl_fraction)
+    #        elif (loop_delta_s > 0) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
+    #            loop_result_qty = loop_qty * Decimal(loop_delta_s / arg_onset)
+    #        result_qty += loop_result_qty
+    #    #return result_qty
+    #    _log.debug("result_qty=(%s)" % str(result_qty))
+    #    return_dict[proc_num] = result_qty
+    ##   }}}
+
+    #def CalculateAtDT_Worker(self, procnum, return_dict, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
+    #    pass
+
     def TotalQtyForDay(self, arg_day, arg_dt_list, arg_qty_list):
     #   {{{
         """Get total qty in list for a given day"""
