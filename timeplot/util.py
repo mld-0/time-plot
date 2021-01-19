@@ -42,8 +42,8 @@ class TimePlotUtils:
             arg_dt_first = dateparser.parse(arg_dt_first)
         if (isinstance(arg_dt_last, str)):
             arg_dt_last = dateparser.parse(arg_dt_last)
-        arg_dt_first = arg_dt_first.replace(tzinfo=None)
-        arg_dt_last = arg_dt_last.replace(tzinfo=None)
+        arg_dt_first = arg_dt_first.replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0)
+        arg_dt_last = arg_dt_last.replace(tzinfo=None, hour=23, minute=59, second=59)
         _dt_format_output = '%Y-%m-%d'
         calendar_list = []
         months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last)
@@ -71,8 +71,8 @@ class TimePlotUtils:
             arg_dt_first = dateparser.parse(arg_dt_first)
         if (isinstance(arg_dt_last, str)):
             arg_dt_last = dateparser.parse(arg_dt_last)
-        arg_dt_first = arg_dt_first.replace(day=1)
-        arg_dt_last = arg_dt_last.replace(day=1)
+        arg_dt_first = arg_dt_first.replace(day=1, hour=0, minute=0, second=0)
+        arg_dt_last = arg_dt_last.replace(day=1, hour=23, minute=59, second=59)
         if (arg_dt_first > arg_dt_last):
             raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
         _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
@@ -221,11 +221,25 @@ class TimePlotUtils:
 
     @staticmethod
     def DivideList(l, n):
-        """Yield n number of sequential chunks from l."""
+    #   {{{
+        """Yield n number of sequential chunks from l. (Use list() on result to convert to list)"""
         d, r = divmod(len(l), n)
         for i in range(n):
             si = (d+1)*(i if i < r else r) + d*(0 if i < r else i - r)
             yield l[si:si+(d+1 if i < r else d)]
+    #   }}}
+
+    @staticmethod
+    def _DayStartAndEndTimes_FromDate(arg_day):
+    #   {{{
+        """For a given date, return as python datetime [ first, last ] second of that day"""
+        if not isinstance(arg_day, datetime.datetime):
+            arg_day = dateparser.parse(arg_day)
+        result_start = arg_day.replace(hour=0, minute=0, second=0, microsecond=0)
+        result_end = arg_day.replace(hour=23, minute=59, second=59, microsecond=0)
+        return [ result_start, result_end ]
+    #   }}}
+    
 
 #   }}}1
 

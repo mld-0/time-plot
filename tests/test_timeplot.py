@@ -33,6 +33,7 @@ from timeplot.decaycalc import DecayCalc
 from timeplot.timeplot import TimePlot
 from timeplot.plotdecayqtys import PlotDecayQtys
 from timeplot.util import TimePlotUtils
+from timeplot.plottimestamps import PlotTimestamps
 #   {{{1
 
 #   debug logging
@@ -102,33 +103,60 @@ class Test_DecayCalc(unittest.TestCase):
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
 
-    def test_GetDaysPerMonthDateRange_FromFirstAndLast(self):
-        dt_start = dateparser.parse("2020-11-18T18:18:31AEDT")
-        dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
+    if (False):
+        def test_PlotDecayQtys_HelloWorld(self):
+            plotdecayqtys = PlotDecayQtys()
+
+        def test_GetDaysPerMonthDateRange_FromFirstAndLast(self):
+            dt_start = dateparser.parse("2020-11-18T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
+            #   {{{
+            expected_result = [['2020-11-18', '2020-11-19', '2020-11-20', '2020-11-21', '2020-11-22', '2020-11-23', '2020-11-24', '2020-11-25', '2020-11-26', '2020-11-27', '2020-11-28', '2020-11-29', '2020-11-30'], ['2020-12-01', '2020-12-02', '2020-12-03', '2020-12-04', '2020-12-05', '2020-12-06', '2020-12-07', '2020-12-08', '2020-12-09', '2020-12-10', '2020-12-11', '2020-12-12', '2020-12-13', '2020-12-14', '2020-12-15', '2020-12-16', '2020-12-17', '2020-12-18', '2020-12-19', '2020-12-20', '2020-12-21', '2020-12-22', '2020-12-23', '2020-12-24', '2020-12-25', '2020-12-26', '2020-12-27', '2020-12-28', '2020-12-29', '2020-12-30', '2020-12-31'], ['2021-01-01', '2021-01-02', '2021-01-03', '2021-01-04', '2021-01-05', '2021-01-06', '2021-01-07', '2021-01-08', '2021-01-09', '2021-01-10', '2021-01-11', '2021-01-12', '2021-01-13', '2021-01-14', '2021-01-15', '2021-01-16', '2021-01-17', '2021-01-18']]
+            #   }}}
+            calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(dt_start, dt_end)
+            #_log.debug("calendar_list=(%s)" % str(calendar_list))
+            self.assertEqual(calendar_list, expected_result)
+
+        #def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange_short(self):
+        #    dt_start = dateparser.parse("2021-01-12T18:18:31AEDT")
+        #    dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
+        #    plotdecayqtys = PlotDecayQtys()
+        #    plotdecayqtys.data_file_dir = self._data_dir_schedule
+        #    plotdecayqtys.data_file_prefix = self.prefix
+        #    plotdecayqtys.data_file_postfix = self.postfix
+        #    plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
+
+        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange_singleday(self):
+            dt_start = dateparser.parse("2021-01-17T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
+            plotdecayqtys = PlotDecayQtys()
+            plotdecayqtys.data_file_dir = self._data_dir_schedule
+            plotdecayqtys.data_file_prefix = self.prefix
+            plotdecayqtys.data_file_postfix = self.postfix
+            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
+
+    if (False):
         #   {{{
-        expected_result = [['2020-11-19', '2020-11-20', '2020-11-21', '2020-11-22', '2020-11-23', '2020-11-24', '2020-11-25', '2020-11-26', '2020-11-27', '2020-11-28', '2020-11-29', '2020-11-30'], ['2020-12-01', '2020-12-02', '2020-12-03', '2020-12-04', '2020-12-05', '2020-12-06', '2020-12-07', '2020-12-08', '2020-12-09', '2020-12-10', '2020-12-11', '2020-12-12', '2020-12-13', '2020-12-14', '2020-12-15', '2020-12-16', '2020-12-17', '2020-12-18', '2020-12-19', '2020-12-20', '2020-12-21', '2020-12-22', '2020-12-23', '2020-12-24', '2020-12-25', '2020-12-26', '2020-12-27', '2020-12-28', '2020-12-29', '2020-12-30', '2020-12-31'], ['2021-01-01', '2021-01-02', '2021-01-03', '2021-01-04', '2021-01-05', '2021-01-06', '2021-01-07', '2021-01-08', '2021-01-09', '2021-01-10', '2021-01-11', '2021-01-12', '2021-01-13', '2021-01-14', '2021-01-15', '2021-01-16', '2021-01-17', '2021-01-18']]
+        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
+            dt_start = dateparser.parse("2020-12-18T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
+            plotdecayqtys = PlotDecayQtys()
+            plotdecayqtys.data_file_dir = self._data_dir_schedule
+            plotdecayqtys.data_file_prefix = self.prefix
+            plotdecayqtys.data_file_postfix = self.postfix
+            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
         #   }}}
-        calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(dt_start, dt_end)
-        #_log.debug("calendar_list=(%s)" % str(calendar_list))
-        self.assertEqual(calendar_list, expected_result)
-
-    def test_PlotDecayQtys_HelloWorld(self):
-        plotdecayqtys = PlotDecayQtys()
-
-    def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
-        dt_start = dateparser.parse("2020-12-18T18:18:31AEDT")
-        dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
-        plotdecayqtys = PlotDecayQtys()
-        plotdecayqtys.data_file_dir = self._data_dir_schedule
-        plotdecayqtys.data_file_prefix = self.prefix
-        plotdecayqtys.data_file_postfix = self.postfix
-        plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
 
     #   Splits/SplitSum tests
     if (True):
         def test_AnalyseVimhSample(self):
-            _vimh_sample_3day = self._getPath_TestData("vimh-3daysample.txt")
-            _log.debug("_vimh_sample_3day=(%s)" % str(_vimh_sample_3day))
+            dt_start = dateparser.parse("2021-01-12T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
+            _vimh_sample_6day = self._getPath_TestData("vimh-6daysample.txt")
+            _log.debug("_vimh_sample_6day=(%s)" % str(_vimh_sample_6day))
+            plottimestamps = PlotTimestamps()
+            #plottimestamps.data_file_prefix = _vimh_sample_6day
+            plottimestamps.PlotDaily_TimestampSplits_ForDateRange(_vimh_sample_6day, dt_start, dt_end)
 
     #   Previous test functions
     if (False):

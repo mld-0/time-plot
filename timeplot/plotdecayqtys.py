@@ -29,7 +29,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #   }}}1
 #   {{{2
-import multiprocessing
+#import multiprocessing
 #from timeplot.util import _GPGEncryptString2ByteArray, _GPGDecryptFileToString, _Fix_DatetimeStr, _GetFiles_FromMonthlyRange
 from timeplot.util import TimePlotUtils
 from timeplot.decaycalc import DecayCalc
@@ -78,6 +78,7 @@ class PlotDecayQtys(object):
 
     def PlotDaily_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end, arg_restrictFuture=True):
     #   {{{
+        _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
         range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         _now = datetime.datetime.now()
@@ -100,50 +101,9 @@ class PlotDecayQtys(object):
                 self.PlotDaily_DecayQtys(loop_day, data_dt_lists, data_qty_lists)
     #   }}}
 
-    #def PlotDaily_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end, arg_restrictFuture=True):
-    ##   {{{
-    #    range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-    #    range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-    #    threads_num = 2
-    #    sublists_range_calendar_list = list(TimePlotUtils.DivideList(range_calendar_list, threads_num))
-    #    sublists_range_months_list = list(TimePlotUtils.DivideList(range_months_list, threads_num))
-    #    manager = multiprocessing.Manager()
-    #    return_dict = manager.dict()
-    #    jobs = []
-    #    for i, (loop_sublist_month, loop_sublist_calendar) in enumerate(zip(sublists_range_months_list, sublists_range_calendar_list)):
-    #        _log.debug("i=(%s)" % str(i))
-    #        p = multiprocessing.Process(target=self.PlotDaily_DecayQtys_ForDateRange_Worker, args=(i, loop_sublist_month, loop_sublist_calendar, arg_restrictFuture))
-    #        jobs.append(p)
-    #        p.start()
-    #    for proc in jobs:
-    #        proc.join()
-    ##   }}}
-    #def PlotDaily_DecayQtys_ForDateRange_Worker(self, proc_num, range_months_list, range_calendar_list, arg_restrictFuture=True):
-    ##   {{{
-    #    #range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-    #    #range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-    #    _now = datetime.datetime.now()
-    #    if (len(range_calendar_list) != len(range_months_list)):
-    #        raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
-    #    for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
-    #        #loop_month_previous = loop_month + relativedelta(months=-1)
-    #        loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_month, loop_month, True)
-    #        data_dt_lists = dict()
-    #        data_qty_lists = dict()
-    #        for loop_label in self._data_labels:
-    #            loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
-    #            data_dt_lists[loop_label] = loop_data_dt_list
-    #            data_qty_lists[loop_label] = loop_data_qty_list
-    #        for loop_day in loop_days_list:
-    #            loop_day_date = dateparser.parse(loop_day)
-    #            if (arg_restrictFuture) and (_now < loop_day_date):
-    #                _log.debug("restrict future, break")
-    #                break
-    #            self.PlotDaily_DecayQtys(loop_day, data_dt_lists, data_qty_lists)
-    ##   }}}
-
     def PlotDaily_DecayQtys(self, loop_day, data_dt_lists, data_qty_lists):
     #   {{{
+        _log.debug("loop_day=(%s)" % str(loop_day))
         loop_dt_list = []
         loop_qty_lists = []
         for loop_label, loop_halflife, loop_onset in zip(self._data_labels, self._data_halflives, self._data_onsets):
@@ -220,37 +180,6 @@ class PlotDecayQtys(object):
         _log.debug("len(results)=(%s)" % str(len(results_dt)))
         return [ results_dt, results_qty ]
     #   }}}
-
-    #def _GetMonthRange(self, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
-    ##   {{{
-    #    """Get list of months between two dates, as either strings or datetimes. Optionally include month before first date."""
-    #    if (isinstance(arg_dt_first, str)):
-    #        arg_dt_first = dateparser.parse(arg_dt_first)
-    #    if (isinstance(arg_dt_last, str)):
-    #        arg_dt_last = dateparser.parse(arg_dt_last)
-    #    arg_dt_first = arg_dt_first.replace(day=1)
-    #    arg_dt_last = arg_dt_last.replace(day=1)
-    #    if (arg_dt_first > arg_dt_last):
-    #        raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
-    #    _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
-    #    _dt_format_output = '%Y-%m'
-    #    _dt_freq = 'MS'
-    #    _log.debug("arg_includeMonthBefore=(%s)" % str(arg_includeMonthBefore))
-    #    if (arg_includeMonthBefore):
-    #        arg_dt_beforeFirst = arg_dt_first + relativedelta(months = -1)
-    #        arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
-    #        arg_dt_first = arg_dt_beforeFirst
-    #    _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
-    #    _log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
-    #    dt_Range = [ x for x in pandas.date_range(start=arg_dt_beforeFirst.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
-    #    if (arg_result_str):
-    #        dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
-    #        _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
-    #        return dt_Range_str
-    #    else:
-    #        _log.debug("dt_Range=(%s)" % str(dt_Range))
-    #        return dt_Range
-    ##   }}}
 
     def _PlotResultsItemsForDay(self, arg_result_dt, arg_result_qty_list, arg_labels_list, arg_output_dir=None, arg_output_fname=None, arg_color_options=None, arg_markNow=False):
     #   {{{
@@ -334,14 +263,14 @@ class PlotDecayQtys(object):
         if not (arg_output_dir is None):
             _path_save = os.path.join(arg_output_dir, arg_output_fname + ".png")
             plt.savefig(_path_save)
-            plt.close()
+            #plt.close()
             _log.debug("_path_save:\n%s" % str(_path_save))
             return _path_save
         else:
             #plt.ioff()
             #plt.show(block=False)
             plt.show()
-            plt.close()
+            #plt.close()
             pass
     #   }}}
 

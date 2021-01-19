@@ -127,7 +127,7 @@ class TimePlot(object):
         for loop_day in days_list:
             _log.debug("loop_day=(%s)" % str(loop_day))
             results_byday_date.append(loop_day)
-            loop_day_start, loop_day_end = self.decaycalc._DayStartAndEndTimes_FromDate(loop_day)
+            loop_day_start, loop_day_end = TimePlotUtils._DayStartAndEndTimes_FromDate(loop_day)
             #_log.debug("loop_day_start=(%s)" % str(loop_day_start))
             #_log.debug("loop_day_end=(%s)" % str(loop_day_end))
 
@@ -176,7 +176,7 @@ class TimePlot(object):
     def _PlotTaskBlocksForDay(self, arg_starttimes, arg_timedones, arg_qualities, arg_date, arg_output_dir):
     #   {{{
         """Given list of starttimes, timedones, qualities, from a given day, plot intervals between start/done times for that day"""
-        _day_start, _day_end = self.decaycalc._DayStartAndEndTimes_FromDate(arg_date)
+        _day_start, _day_end = TimePlotUtils._DayStartAndEndTimes_FromDate(arg_date)
         _log.debug("arg_date=(%s)" % str(arg_date))
         _log.debug("_day_start=(%s), _day_end=(%s)" % (str(_day_start), str(_day_end)))
         _log.debug("len(arg_starttimes)=(%s)" % len(arg_starttimes))
