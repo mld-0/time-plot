@@ -16,13 +16,20 @@ version = re.search(
 with open("README.md", "rb") as f:
     long_descr = f.read().decode("utf-8")
 
+install_depend = [
+    'dtscan',
+    'dateparser',
+    'matplotlib',
+    'pandas',
+    'tzlocal',
+    'pytz',
+    'taskblock-reader',
+    'dtscan',
+]
+
 test_depend = [ 
-    'pytest'
-    'pandas'
-    'tzlocal'
-    'pytz'
-    'dateparser'
-    'decaycalc'
+    'pytest',
+    'tox',
 ]
 
 setup(
@@ -33,6 +40,7 @@ setup(
     description="Plotting <various> involving passage of time per day/week",
     long_description=long_descr,
     packages = ['timeplot', 'tests'],
+    install_requires=install_depend,
     tests_require=test_depend,
     entry_points={
         'console_scripts': [ 
