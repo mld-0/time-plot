@@ -152,7 +152,25 @@ class TimePlotUtils:
     def _GetAvailableFiles_FromMonthlyRange(arg_data_dir, arg_file_prefix, arg_file_postfix):
     #   {{{
         """Get a sorted list of all files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix'"""
+        if (arg_data_dir is None) or (arg_file_prefix is None) or (arg_file_postfix is None):
+            raise Exception("None value for one of arg_data_dir=(%s), arg_file_prefix=(%s), arg_file_postfix=(%s)" % (str(arg_data_dir), str(arg_file_prefix), str(arg_file_postfix)))
         filematches_regex = arg_file_prefix + "[0-9][0-9][0-9][0-9]-[0-9][0-9]" + arg_file_postfix
+        filematches_glob = os.path.join(arg_data_dir, filematches_regex)
+        _log.debug("filematches_glob=(%s)" % str(filematches_glob))
+        filematches_list = glob.glob(filematches_glob)
+        filematches_list.sort()
+        _log.debug("filematches_list:\n%s" % pprint.pformat(filematches_list))
+        return filematches_list
+    #   }}}
+
+    @staticmethod
+    def _GetAvailableFiles_FromMonthlyRange_WithFullTime(arg_data_dir, arg_file_prefix, arg_file_postfix):
+    #   {{{
+        """Get a sorted list of all files in arg_data_dir of the form 'arg_file_prefix + %Y-%m + arg_file_postfix'"""
+        if (arg_data_dir is None) or (arg_file_prefix is None) or (arg_file_postfix is None):
+            raise Exception("None value for one of arg_data_dir=(%s), arg_file_prefix=(%s), arg_file_postfix=(%s)" % (str(arg_data_dir), str(arg_file_prefix), str(arg_file_postfix)))
+        _dateformat = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]-[0-9][0-9]"
+        filematches_regex = arg_file_prefix + _dateformat + arg_file_postfix
         filematches_glob = os.path.join(arg_data_dir, filematches_regex)
         _log.debug("filematches_glob=(%s)" % str(filematches_glob))
         filematches_list = glob.glob(filematches_glob)

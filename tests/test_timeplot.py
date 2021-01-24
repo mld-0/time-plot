@@ -32,6 +32,7 @@ from matplotlib.dates import DateFormatter
 from timeplot.decaycalc import DecayCalc
 from timeplot.timeplot import TimePlot
 from timeplot.plotdecayqtys import PlotDecayQtys
+from timeplot.plotdassresults import PlotDassResults
 from timeplot.util import TimePlotUtils
 from timeplot.plottimestamps import PlotTimestamps
 #   {{{1
@@ -51,6 +52,8 @@ class Test_DecayCalc(unittest.TestCase):
     _flag_openPlots = False
 
     _tasklog_dir = os.path.join(os.environ.get('mld_tasklogs'), "_worklog")
+
+    _dassresults_dir = os.environ.get('mld_dass21_results')
 
     _pkg_testdata = "data"
     def _getPath_TestData(self, arg_fname):
@@ -100,8 +103,29 @@ class Test_DecayCalc(unittest.TestCase):
     tasklog_prefix = ""
     tasklog_postfix = ".worklog.vimgpg"
 
+    _dass_prefix = "dass21-results."
+    _dass_postfix = ".vimgpg"
+
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
+
+    if (True):
+        def test_ReadDassScoresFromFile(self):
+            plotdass = PlotDassResults()
+            plotdass._data_path_dir = self._dassresults_dir
+            plotdass._data_fname_prefix = self._dass_prefix
+            plotdass._data_fname_postfix = self._dass_postfix
+            dass_list_data = plotdass._ReadDassData_All()
+
+
+        def test_ReadDassData_GetFirstAndLastDateInDir(self):
+            plotdass = PlotDassResults()
+            plotdass._data_path_dir = self._dassresults_dir
+            plotdass._data_fname_prefix = self._dass_prefix
+            plotdass._data_fname_postfix = self._dass_postfix
+            results_list = plotdass._ReadDassData_GetFirstAndLastDateInDir()
+            print("results_list=(%s)" % str(results_list))
+
 
     if (False):
         def test_PlotDecayQtys_HelloWorld(self):
@@ -148,7 +172,7 @@ class Test_DecayCalc(unittest.TestCase):
         #   }}}
 
     #   Splits/SplitSum tests
-    if (True):
+    if (False):
         def test_AnalyseVimhSample(self):
             dt_start = dateparser.parse("2021-01-12T18:18:31AEDT")
             dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
@@ -157,6 +181,8 @@ class Test_DecayCalc(unittest.TestCase):
             plottimestamps = PlotTimestamps()
             #plottimestamps.data_file_prefix = _vimh_sample_6day
             plottimestamps.PlotDaily_TimestampSplits_ForDateRange(_vimh_sample_6day, dt_start, dt_end)
+            if (self._flag_openPlots):
+                webbrowser.open('file:%s' % self._output_dir)
 
     #   Previous test functions
     if (False):
