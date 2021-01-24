@@ -1,8 +1,10 @@
 pytest
 argcomplete
 pandas
+numpy
 freezegun
 pytz
 tzlocal
 dateparser
+pytest
 matplotlib

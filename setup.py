@@ -30,6 +30,7 @@ install_depend = [
 test_depend = [ 
     'pytest',
     'tox',
+    'matplotlib',
 ]
 
 setup(
