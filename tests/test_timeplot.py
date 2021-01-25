@@ -55,7 +55,7 @@ class Test_DecayCalc(unittest.TestCase):
 
     _dassresults_dir = os.environ.get('mld_dass21_results')
 
-    _pkg_testdata = "data"
+    _pkg_testdata = "tests.data"
     def _getPath_TestData(self, arg_fname):
     #   {{{
         path_test = None
