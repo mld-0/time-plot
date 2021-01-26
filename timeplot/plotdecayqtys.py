@@ -118,9 +118,10 @@ class PlotDecayQtys(object):
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass
 
-    def _ReadQtyScheduleData(self, arg_files_list, arg_label):
+    def _ReadQtyScheduleData(self, arg_files_list, arg_label, arg_filter_dates=None):
     #   {{{
-        """Given a list of files, get as lists qtys and datetimes (from columns self.data_column_qty and self.data_column_dt, columns defined by self.data_delim), for lines where value in column self.data_column_label==arg_label (if arg_label is None, read every line). Return [ results_dt, results_qty ]"""
+        """Given a list of files, get as lists qtys and datetimes (from columns self.data_column_qty and self.data_column_dt, columns defined by self.data_delim), for lines where value in column self.data_column_label==arg_label (if arg_label is None, read every line). If arg_filter_dates is not None, exclude datetime string candidates not found in list. Return list of lists [ results_dt, results_qty ]"""
+        _starttime = datetime.datetime.now()
         #   validate data_column_dt, data_column_qty, data_column_label
         #   {{{
         if (not isinstance(self.data_column_dt, int)) or (not isinstance(self.data_column_qty, int)) or (not isinstance(self.data_column_label, int)):
@@ -143,6 +144,7 @@ class PlotDecayQtys(object):
                     _log.warning("len(loop_line_split)=(%s), loop_line_split=(%s)" % (len(loop_line_split), str(loop_line_split)))
                     continue
 
+
                 if (arg_label is None) or (loop_line_split[self.data_column_label] == arg_label):
                     loop_qty_str = loop_line_split[self.data_column_qty]
                     loop_qty = Decimal(loop_qty_str)
@@ -150,9 +152,14 @@ class PlotDecayQtys(object):
                     loop_dt_str = loop_line_split[self.data_column_dt]
                     loop_dt_str = TimePlotUtils._Fix_DatetimeStr(loop_dt_str)
 
+                    #   Skip if date is found in list of arg_filter_dates
+                    if arg_filter_dates is not None and not any(x.strftime("%Y-%m-%d") in loop_dt_str for x in arg_filter_dates):
+                        continue
+                        
+
                     #   Attempt parsing with datetime.datetime.strptime() on account of slowness of dateparser.parse
                     loop_dt = None
-                    #   {{{
+
                     if (loop_dt is None):
                         try:
                             loop_dt = datetime.datetime.strptime(loop_dt_str, "%Y-%m-%dT%H:%M:%S%Z")
@@ -163,7 +170,7 @@ class PlotDecayQtys(object):
                             loop_dt = datetime.datetime.strptime(loop_dt_str, "%Y-%m-%dT%H:%M:%S")
                         except Exception as e:
                             loop_dt = None
-                    #   }}}
+
                     if (loop_dt is None):
                         loop_dt = dateparser.parse(loop_dt_str)
 
@@ -178,6 +185,11 @@ class PlotDecayQtys(object):
         if (len(results_dt) != len(results_qty)):
             raise Exception("mismatch, len(results_dt)=(%s), len(results_qty)=(%s)" % (str(len(results_dt)), str(len(results_qty))))
         _log.debug("len(results)=(%s)" % str(len(results_dt)))
+
+        _timedone = datetime.datetime.now()
+        _elapsed = _timedone - _starttime
+        _log.debug("_elapsed=(%s)" % str(_elapsed))
+
         return [ results_dt, results_qty ]
     #   }}}
 

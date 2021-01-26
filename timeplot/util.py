@@ -117,10 +117,12 @@ class TimePlotUtils:
         return located_filepaths
     #   }}}
 
+    #   TODO: 2021-01-26T11:41:37AEDT Compare sh256 of resulting string to sh256 of decrypted existing file, skip copying if match
     @staticmethod
     def _CopyData_DivideByMonth(arg_source_path, arg_dest_dir, arg_dest_prefix, arg_dest_postfix, arg_dt_first, arg_dt_last, arg_overwrite=False, arg_includeMonthBefore=False, arg_gpg_key=None):
     #   {{{
         """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month. Optionally encrypt data with system gpg."""
+        _starttime = datetime.datetime.now()
         dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
         for loop_dt_str in dt_Range_str:
             loop_data = ""
@@ -146,6 +148,9 @@ class TimePlotUtils:
             else:
                 with open(loop_dest_filepath, "w") as f:
                     f.write(loop_data)
+        _timedone = datetime.datetime.now()
+        _elapsed = _timedone - _starttime
+        _log.debug("_elapsed=(%s)" % str(_elapsed))
     #   }}}
 
     @staticmethod

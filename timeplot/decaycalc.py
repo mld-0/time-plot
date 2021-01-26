@@ -93,6 +93,7 @@ class DecayCalc(object):
     def CalculateAtDT(self, arg_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
     #   {{{
         """given lists arg_qty_items/arg_dt_items, (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
+        _startime = datetime.datetime.now()
         result_qty = Decimal(0.0)
         for loop_dt, loop_qty in zip(arg_dt_items, arg_qty_items):
             #   Reconcile timezones 
@@ -111,6 +112,9 @@ class DecayCalc(object):
             elif (loop_delta_s > 0) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
                 loop_result_qty = loop_qty * Decimal(loop_delta_s / arg_onset)
             result_qty += loop_result_qty
+        _timedone = datetime.datetime.now()
+        _elapsed = _timedone - _startime
+        _log.debug("_elapsed=(%s)" % str(_elapsed))
         return result_qty
     #   }}}
 
