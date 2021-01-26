@@ -43,7 +43,7 @@ _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
 logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_logging_datetime)
 
-class Test_DecayCalc(unittest.TestCase):
+class Test_TimePlot(unittest.TestCase):
 #   {{{
     decaycalc = DecayCalc()
     timeplot = TimePlot()
@@ -109,61 +109,6 @@ class Test_DecayCalc(unittest.TestCase):
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
 
-    if (True):
-        def test_ReadDassScoresFromFile(self):
-            plotdass = PlotDassResults()
-            plotdass._data_path_dir = self._dassresults_dir
-            plotdass._data_fname_prefix = self._dass_prefix
-            plotdass._data_fname_postfix = self._dass_postfix
-            dass_list_data = plotdass._ReadDassData_All()
-
-
-        def test_ReadDassData_GetFirstAndLastDateInDir(self):
-            plotdass = PlotDassResults()
-            plotdass._data_path_dir = self._dassresults_dir
-            plotdass._data_fname_prefix = self._dass_prefix
-            plotdass._data_fname_postfix = self._dass_postfix
-            results_list = plotdass._ReadDassData_GetFirstAndLastDateInDir()
-            print("results_list=(%s)" % str(results_list))
-
-
-    if (True):
-        def test_PlotDecayQtys_HelloWorld(self):
-            plotdecayqtys = PlotDecayQtys()
-
-        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange_singleday(self):
-            dt_start = dateparser.parse("2021-01-17T18:18:31AEDT")
-            dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
-            plotdecayqtys = PlotDecayQtys()
-            plotdecayqtys.data_file_dir = self._data_dir_schedule
-            plotdecayqtys.data_file_prefix = self.prefix
-            plotdecayqtys.data_file_postfix = self.postfix
-            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
-
-    if (False):
-        #   {{{
-        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
-            dt_start = dateparser.parse("2020-12-18T18:18:31AEDT")
-            dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
-            plotdecayqtys = PlotDecayQtys()
-            plotdecayqtys.data_file_dir = self._data_dir_schedule
-            plotdecayqtys.data_file_prefix = self.prefix
-            plotdecayqtys.data_file_postfix = self.postfix
-            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
-        #   }}}
-
-    #   Splits/SplitSum tests
-    if (False):
-        def test_AnalyseVimhSample(self):
-            dt_start = dateparser.parse("2021-01-12T18:18:31AEDT")
-            dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
-            _vimh_sample_6day = self._getPath_TestData("vimh-6daysample.txt")
-            _log.debug("_vimh_sample_6day=(%s)" % str(_vimh_sample_6day))
-            plottimestamps = PlotTimestamps()
-            #plottimestamps.data_file_prefix = _vimh_sample_6day
-            plottimestamps.PlotDaily_TimestampSplits_ForDateRange(_vimh_sample_6day, dt_start, dt_end)
-            if (self._flag_openPlots):
-                webbrowser.open('file:%s' % self._output_dir)
 
     #   Previous test functions
     if (False):

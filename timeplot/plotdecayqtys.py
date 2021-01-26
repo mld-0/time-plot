@@ -115,7 +115,48 @@ class PlotDecayQtys(object):
     #   }}}
 
     def PlotDaysPerWeek_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
-        pass
+    #   {{{
+        """Plot schedule item qty totals, for each day between start/end, week-by-week."""
+        _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
+        range_calendar_list = TimePlotUtils.CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
+        range_weeks_list = TimePlotUtils.WeeklyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+        result_sums = []
+        for loop_week, loop_days_list in zip(range_weeks_list, range_calendar_list):
+            loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_week, loop_week, True)
+            loop_sums = []
+            data_dt_lists = dict()
+            data_qty_lists = dict()
+            for loop_label in self._data_labels:
+                loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
+                data_dt_lists[loop_label] = loop_data_dt_list
+                data_qty_lists[loop_label] = loop_data_qty_list
+            for loop_day in loop_days_list:
+                loop_day_start, loop_day_end = TimePlotUtils._DayStartAndEndTimes_FromDate(loop_day)
+                _log.debug("loop_day_start=(%s)" % str(loop_day_start))
+                _log.debug("loop_day_end=(%s)" % str(loop_day_end))
+                loop_day_sumqtys = dict()
+                loop_day_sumqty = 0
+                for loop_label in self._data_labels:
+                    _log.debug("loop_label=(%s)" % str(loop_label))
+                    for loop_dt, loop_qty in zip(data_dt_lists[loop_label], data_qty_lists[loop_label]):
+                        #   If loop_dt is within loop_day, add loop_qty to loop_day_sumqty
+                        pass
+                        loop_dt.replace(tzinfo=None)
+                        if (loop_dt >= loop_day_start) and (loop_dt <= loop_day_end):
+                            loop_day_sumqty += loop_qty
+                    _log.debug("loop_day_sumqty=(%s)" % str(loop_day_sumqty))
+                    loop_day_sumqtys[loop_label] = loop_day_sumqty
+                self.PlotDaysPerWeek_DecayQtys(loop_days_list, loop_sums)
+                loop_sums.append(loop_day_sumqtys)
+            result_sums.append(loop_sums)
+        return [ range_calendar_list, loop_sums ]
+    #   }}}
+
+    def PlotDaysPerWeek_DecayQtys(self, arg_days_list, arg_qtys_list):
+        _log.debug("arg_days_list=(%s)" % str(arg_days_list))
+        _log.debug("arg_qtys_list=(%s)" % str(arg_qtys_list))
+        #   Continue: 2021-01-26T18:57:31AEDT labeled graph of item(s) for each day
+
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass
 
