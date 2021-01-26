@@ -53,8 +53,8 @@ class PlotTimestamps(object):
     def PlotDaily_TimestampSplits_ForDateRange(self, path_log, arg_date_start, arg_date_end, arg_restrictFuture=True):
     #   {{{
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
-        range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-        range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+        range_calendar_list = TimePlotUtils.CalendarRange_Monthly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
+        range_months_list = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         _now = datetime.datetime.now()
         if (len(range_calendar_list) != len(range_months_list)):
             raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))

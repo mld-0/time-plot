@@ -536,7 +536,7 @@ class TimePlot(object):
     #def _CopyData_DivideByMonth(self, arg_source_path, arg_dest_dir, arg_dest_prefix, arg_dest_postfix, arg_dt_first, arg_dt_last, arg_overwrite=False, arg_includeMonthBefore=False, arg_gpg_key=None):
     ##   {{{
     #    """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month. Optionally encrypt data with system gpg."""
-    #    dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
+    #    dt_Range_str = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
     #    for loop_dt_str in dt_Range_str:
     #        loop_data = ""
     #        with open(arg_source_path, "r") as f:
@@ -563,7 +563,7 @@ class TimePlot(object):
     #                f.write(loop_data)
     ##   }}}
 
-    #def _GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
+    #def MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
     ##   {{{
     #    """Get list of months between two dates, as either strings or datetimes. Optionally include month before first date."""
     #    if (isinstance(arg_dt_first, str)):

@@ -114,7 +114,7 @@ class DecayCalc(object):
             result_qty += loop_result_qty
         _timedone = datetime.datetime.now()
         _elapsed = _timedone - _startime
-        _log.debug("_elapsed=(%s)" % str(_elapsed))
+        #_log.debug("_elapsed=(%s)" % str(_elapsed))
         return result_qty
     #   }}}
 

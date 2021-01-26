@@ -79,11 +79,12 @@ class PlotDecayQtys(object):
     def PlotDaily_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end, arg_restrictFuture=True):
     #   {{{
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
-        range_calendar_list = TimePlotUtils._GetDaysPerMonthDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-        range_months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+        range_calendar_list = TimePlotUtils.CalendarRange_Monthly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
+        range_months_list = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
         _now = datetime.datetime.now()
         if (len(range_calendar_list) != len(range_months_list)):
             raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
+        _log.debug("data_file_dir=(%s)" % str(self.data_file_dir))
         for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
             #loop_month_previous = loop_month + relativedelta(months=-1)
             loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_month, loop_month, True)
@@ -188,7 +189,7 @@ class PlotDecayQtys(object):
 
         _timedone = datetime.datetime.now()
         _elapsed = _timedone - _starttime
-        _log.debug("_elapsed=(%s)" % str(_elapsed))
+        #_log.debug("_elapsed=(%s)" % str(_elapsed))
 
         return [ results_dt, results_qty ]
     #   }}}
@@ -275,7 +276,7 @@ class PlotDecayQtys(object):
         if not (arg_output_dir is None):
             _path_save = os.path.join(arg_output_dir, arg_output_fname + ".png")
             plt.savefig(_path_save)
-            #plt.close()
+            plt.close()
             _log.debug("_path_save:\n%s" % str(_path_save))
             return _path_save
         else:

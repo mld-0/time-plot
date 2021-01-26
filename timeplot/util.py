@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_loggin
 class TimePlotUtils:
 
     @staticmethod
-    def _GetDaysPerMonthDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True):
+    def CalendarRange_Monthly_DateRangeFromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True):
     #   {{{
         """Return list of lists 'calendar list', with one list for each month, containing the days of that month falling inside specified date range"""
         if (isinstance(arg_dt_first, str)):
@@ -46,7 +46,7 @@ class TimePlotUtils:
         arg_dt_last = arg_dt_last.replace(tzinfo=None, hour=23, minute=59, second=59)
         _dt_format_output = '%Y-%m-%d'
         calendar_list = []
-        months_list = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last)
+        months_list = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last)
         for loop_month in months_list:
             _log.debug("loop_month=(%s)" % str(loop_month))
             loop_days_in_month = pandas.Period(loop_month).days_in_month
@@ -60,11 +60,73 @@ class TimePlotUtils:
                         loop_day = loop_day.strftime(_dt_format_output)
                     loop_month_list.append(loop_day)
             calendar_list.append(loop_month_list)
+        _log.debug("calendar_list=(%s)" % str(calendar_list))
         return calendar_list
     #   }}}
 
     @staticmethod
-    def _GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
+    def CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True):
+    #   {{{
+        """Return list of lists 'calendar list', with one list for each month, containing the days of that month falling inside specified date range"""
+        if (isinstance(arg_dt_first, str)):
+            arg_dt_first = dateparser.parse(arg_dt_first)
+        if (isinstance(arg_dt_last, str)):
+            arg_dt_last = dateparser.parse(arg_dt_last)
+        arg_dt_first = arg_dt_first.replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0)
+        arg_dt_last = arg_dt_last.replace(tzinfo=None, hour=23, minute=59, second=59)
+        _dt_format_output = '%Y-%m-%d'
+        calendar_list = []
+        weeks_list = TimePlotUtils.WeeklyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, True)
+        for loop_week in weeks_list:
+            _log.debug("loop_week=(%s)" % str(loop_week))
+            loop_days_in_week = 7
+            loop_days_list = [ x.to_pydatetime() for x in pandas.date_range(start=loop_week, freq='d', periods=loop_days_in_week) ]
+            #_log.debug("loop_days_list=(%s)" % str(loop_days_list))
+            loop_month_list = []
+            for loop_day in loop_days_list:
+                if (loop_day >= arg_dt_first) and (loop_day <= arg_dt_last):
+                    if (arg_result_str):
+                        loop_day = loop_day.strftime(_dt_format_output)
+                    loop_month_list.append(loop_day)
+            calendar_list.append(loop_month_list)
+        _log.debug("calendar_list=(%s)" % str(calendar_list))
+        return calendar_list
+    #   }}}
+
+    @staticmethod
+    def WeeklyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeWeekBefore=False, arg_result_str=True):
+    #   {{{
+        """Get list of weeks between two dates, as either strings or datetimes. Optionally include week before first date. Use Sunday as beginning of week"""
+        if (isinstance(arg_dt_first, str)):
+            arg_dt_first = dateparser.parse(arg_dt_first)
+        if (isinstance(arg_dt_last, str)):
+            arg_dt_last = dateparser.parse(arg_dt_last)
+        arg_dt_first = arg_dt_first.replace(hour=0, minute=0, second=0) - datetime.timedelta(days=arg_dt_first.weekday())
+        arg_dt_last = arg_dt_last.replace(hour=23, minute=59, second=59)
+        if (arg_dt_first > arg_dt_last):
+            raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
+        _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
+        _dt_format_output = '%Y-%m-%d'
+        _dt_freq = 'W'
+        _log.debug("arg_includeWeekBefore=(%s)" % str(arg_includeWeekBefore))
+        if (arg_includeWeekBefore):
+            arg_dt_beforeFirst = arg_dt_first + relativedelta(weeks=-1)
+            #arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
+            arg_dt_first = arg_dt_beforeFirst
+        #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
+        #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
+        dt_Range = [ x.to_pydatetime() for x in pandas.date_range(start=arg_dt_first.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
+        if (arg_result_str):
+            dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
+            _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
+            return dt_Range_str
+        else:
+            _log.debug("dt_Range=(%s)" % str(dt_Range))
+            return dt_Range
+    #   }}}
+
+    @staticmethod
+    def MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
     #   {{{
         """Get list of months between two dates, as either strings or datetimes. Optionally include month before first date."""
         if (isinstance(arg_dt_first, str)):
@@ -99,7 +161,7 @@ class TimePlotUtils:
     def _GetFiles_FromMonthlyRange(arg_data_dir, arg_file_prefix, arg_file_postfix, arg_dt_first, arg_dt_last, arg_includeMonthBefore=False):
     #   {{{ 
         """Get a list of the files in arg_data_dir, where each file is of the format 'arg_file_prefix + date_str + arg_file_postfix', and date_str is %Y-%m for each year and month between one month before arg_dt_first, and arg_dt_last"""
-        dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
+        dt_Range_str = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
         #   Raise exception if arg_data_dir doesn't exist
         if not os.path.isdir(arg_data_dir):
             raise Exception("dir not found arg_data_dir=(%s)" % str(arg_data_dir))
@@ -123,7 +185,7 @@ class TimePlotUtils:
     #   {{{
         """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month. Optionally encrypt data with system gpg."""
         _starttime = datetime.datetime.now()
-        dt_Range_str = TimePlotUtils._GetMonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
+        dt_Range_str = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
         for loop_dt_str in dt_Range_str:
             loop_data = ""
             with open(arg_source_path, "r") as f:
