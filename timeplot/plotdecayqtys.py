@@ -38,6 +38,7 @@ _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
 logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_logging_datetime)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 class PlotDecayQtys(object):
     default_color_options = [ 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple', 'tab:red'  ]
@@ -111,7 +112,7 @@ class PlotDecayQtys(object):
             _log.debug("loop_day=(%s), loop_label=(%s)" % (str(loop_day), str(loop_label)))
             loop_dt_list, result_loop_qty_list = self.decaycalc.CalculateRangeForDay(loop_day, data_dt_lists[loop_label], data_qty_lists[loop_label], loop_halflife, loop_onset)
             loop_qty_lists.append(result_loop_qty_list)
-        self._PlotResultsItemsForDay(loop_dt_list, loop_qty_lists, self._data_labels, self.plot_save_dir, "decayqty-" + loop_day, self.default_color_options, True)
+        self._PlotResultsItemsForDay(loop_dt_list, loop_qty_lists, self._data_labels, self.plot_save_dir, loop_day + "-decayqty" , self.default_color_options, True)
     #   }}}
 
     def PlotDaysPerWeek_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
@@ -120,8 +121,8 @@ class PlotDecayQtys(object):
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
         range_calendar_list = TimePlotUtils.CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
         range_weeks_list = TimePlotUtils.WeeklyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
-        result_sums = []
         for loop_week, loop_days_list in zip(range_weeks_list, range_calendar_list):
+            result_sums = []
             loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_week, loop_week, True)
             loop_sums = []
             data_dt_lists = dict()
@@ -135,7 +136,7 @@ class PlotDecayQtys(object):
                 _log.debug("loop_day_start=(%s)" % str(loop_day_start))
                 _log.debug("loop_day_end=(%s)" % str(loop_day_end))
                 loop_day_sumqtys = dict()
-                loop_day_sumqty = 0
+                loop_day_sumqty = Decimal(0)
                 for loop_label in self._data_labels:
                     _log.debug("loop_label=(%s)" % str(loop_label))
                     for loop_dt, loop_qty in zip(data_dt_lists[loop_label], data_qty_lists[loop_label]):
@@ -146,16 +147,90 @@ class PlotDecayQtys(object):
                             loop_day_sumqty += loop_qty
                     _log.debug("loop_day_sumqty=(%s)" % str(loop_day_sumqty))
                     loop_day_sumqtys[loop_label] = loop_day_sumqty
-                self.PlotDaysPerWeek_DecayQtys(loop_days_list, loop_sums)
-                loop_sums.append(loop_day_sumqtys)
-            result_sums.append(loop_sums)
-        return [ range_calendar_list, loop_sums ]
+                result_sums.append(loop_day_sumqtys)
+            self.PlotDaysPerWeek_DecayQtys(loop_days_list, result_sums)
+        return [ range_calendar_list, result_sums ]
     #   }}}
 
+    from matplotlib import pyplot as plt
+
+
+    def bar_plot(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
+        """Draws a bar plot with multiple bars per data point.
+        LINK: https://stackoverflow.com/questions/14270391/python-matplotlib-multiple-bars
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axis
+            The axis we want to draw our plot on.
+        data: dictionary
+            A dictionary containing the data we want to plot. Keys are the names of the
+            data, the items is a list of the values.
+            Example:
+            data = {
+                "x":[1,2,3],
+                "y":[1,2,3],
+                "z":[1,2,3],
+            }
+        colors : array-like, optional
+            A list of colors which are used for the bars. If None, the colors
+            will be the standard matplotlib color cyle. (default: None)
+        total_width : float, optional, default: 0.8
+            The width of a bar group. 0.8 means that 80% of the x-axis is covered
+            by bars and 20% will be spaces between the bars.
+        single_width: float, optional, default: 1
+            The relative width of a single bar within a group. 1 means the bars
+            will touch eachother within a group, values less than 1 will make
+            these bars thinner.
+        legend: bool, optional, default: True
+            If this is set to true, a legend will be added to the axis.
+        """
+        # Check if colors where provided, otherwhise use the default color cycle
+        if colors is None:
+            colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        # Number of bars per group
+        n_bars = len(data)
+        # The width of a single bar
+        bar_width = total_width / n_bars
+        # List containing handles for the drawn bars, used for the legend
+        bars = []
+        # Iterate over all data
+        for i, (name, values) in enumerate(data.items()):
+            # The offset in x direction of that bar
+            x_offset = (i - n_bars / 2) * bar_width + bar_width / 2
+            # Draw a bar for every value of that type
+            for x, y in enumerate(values):
+                bar = ax.bar(x + x_offset, y, width=bar_width * single_width, color=colors[i % len(colors)])
+            # Add a handle to the last drawn bar, which we'll need for the legend
+            bars.append(bar[0])
+        # Draw legend if we need
+        if legend:
+            ax.legend(bars, data.keys())
+        plt.xticks(range(len(xvals)), xvals)
+        ax.tick_params(axis='x', which='minor', labelsize=4)
+        ax.tick_params(axis='x', which='major', labelsize=6)
+
     def PlotDaysPerWeek_DecayQtys(self, arg_days_list, arg_qtys_list):
+        _log.debug("len(arg_days_list)=(%s)" % len(arg_days_list))
         _log.debug("arg_days_list=(%s)" % str(arg_days_list))
+        _log.debug("len(arg_qtys_list)=(%s)" % len(arg_qtys_list))
         _log.debug("arg_qtys_list=(%s)" % str(arg_qtys_list))
-        #   Continue: 2021-01-26T18:57:31AEDT labeled graph of item(s) for each day
+
+        v = {k: [dic[k] for dic in arg_qtys_list] for k in arg_qtys_list[0]}
+        _log.debug("v=(%s)" % str(v))
+
+        fig, ax = plt.subplots()
+        self.bar_plot(ax, arg_days_list, v, total_width=.8, single_width=.9)
+
+        date_first_str = arg_days_list[0]
+
+        _path_save = os.path.join(self.plot_save_dir, date_first_str + "-qtyweek" + ".png")
+        plt.savefig(_path_save)
+        plt.close()
+
+
+
+
+
 
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass
@@ -197,7 +272,7 @@ class PlotDecayQtys(object):
                     #   Skip if date is found in list of arg_filter_dates
                     if arg_filter_dates is not None and not any(x.strftime("%Y-%m-%d") in loop_dt_str for x in arg_filter_dates):
                         continue
-                        
+
 
                     #   Attempt parsing with datetime.datetime.strptime() on account of slowness of dateparser.parse
                     loop_dt = None

@@ -113,32 +113,8 @@ class Test_DecayCalc(unittest.TestCase):
     def test_PlotDecayQtys_HelloWorld(self):
         plotdecayqtys = PlotDecayQtys()
 
-    def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange_singleday(self):
-        dt_start = dateparser.parse("2021-01-17T18:18:31AEDT")
-        dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
-        plotdecayqtys = PlotDecayQtys()
-        plotdecayqtys.data_file_dir = self._data_dir_schedule
-        plotdecayqtys.data_file_prefix = self.prefix
-        plotdecayqtys.data_file_postfix = self.postfix
-        plotdecayqtys.plot_save_dir = self._output_dir
-        plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
-        if (self._flag_openPlots):
-            webbrowser.open('file:%s' % self._output_dir)
-
-    def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
-        dt_start = dateparser.parse("2021-01-07T18:18:31AEDT")
-        dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
-        plotdecayqtys = PlotDecayQtys()
-        plotdecayqtys.data_file_dir = self._data_dir_schedule
-        plotdecayqtys.data_file_prefix = self.prefix
-        plotdecayqtys.data_file_postfix = self.postfix
-        plotdecayqtys.plot_save_dir = self._output_dir
-        plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
-        if (self._flag_openPlots):
-            webbrowser.open('file:%s' % self._output_dir)
-
     def test_PlotDaysPerWeek_DecayQtys_ForDateRange(self):
-        dt_start = dateparser.parse("2020-11-07T18:18:31AEDT")
+        dt_start = dateparser.parse("2020-11-10T18:18:31AEDT")
         dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
         plotdecayqtys = PlotDecayQtys()
         plotdecayqtys.data_file_dir = self._data_dir_schedule
@@ -148,6 +124,30 @@ class Test_DecayCalc(unittest.TestCase):
         plotdecayqtys.PlotDaysPerWeek_DecayQtys_ForDateRange(dt_start, dt_end)
         if (self._flag_openPlots):
             webbrowser.open('file:%s' % self._output_dir)
+
+    if (False):
+        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange_singleday(self):
+            dt_start = dateparser.parse("2021-01-17T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
+            plotdecayqtys = PlotDecayQtys()
+            plotdecayqtys.data_file_dir = self._data_dir_schedule
+            plotdecayqtys.data_file_prefix = self.prefix
+            plotdecayqtys.data_file_postfix = self.postfix
+            plotdecayqtys.plot_save_dir = self._output_dir
+            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
+            if (self._flag_openPlots):
+                webbrowser.open('file:%s' % self._output_dir)
+        def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
+            dt_start = dateparser.parse("2021-01-07T18:18:31AEDT")
+            dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
+            plotdecayqtys = PlotDecayQtys()
+            plotdecayqtys.data_file_dir = self._data_dir_schedule
+            plotdecayqtys.data_file_prefix = self.prefix
+            plotdecayqtys.data_file_postfix = self.postfix
+            plotdecayqtys.plot_save_dir = self._output_dir
+            plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
+            if (self._flag_openPlots):
+                webbrowser.open('file:%s' % self._output_dir)
 
 #   }}}
 
