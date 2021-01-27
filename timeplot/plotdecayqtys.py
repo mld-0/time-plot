@@ -33,6 +33,7 @@ from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 #from timeplot.util import _GPGEncryptString2ByteArray, _GPGDecryptFileToString, _Fix_DatetimeStr, _GetFiles_FromMonthlyRange
 from timeplot.util import TimePlotUtils
 from timeplot.decaycalc import DecayCalc
+from matplotlib import pyplot as plt
 
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
@@ -86,20 +87,24 @@ class PlotDecayQtys(object):
         if (len(range_calendar_list) != len(range_months_list)):
             raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
         _log.debug("data_file_dir=(%s)" % str(self.data_file_dir))
+
         for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
             #loop_month_previous = loop_month + relativedelta(months=-1)
             loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_month, loop_month, True)
             data_dt_lists = dict()
             data_qty_lists = dict()
+
             for loop_label in self._data_labels:
                 loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
                 data_dt_lists[loop_label] = loop_data_dt_list
                 data_qty_lists[loop_label] = loop_data_qty_list
+
             for loop_day in loop_days_list:
                 loop_day_date = dateparser.parse(loop_day)
                 if (arg_restrictFuture) and (_now < loop_day_date):
                     _log.debug("restrict future, break")
                     break
+
                 self.PlotDaily_DecayQtys(loop_day, data_dt_lists, data_qty_lists)
     #   }}}
 
@@ -121,41 +126,51 @@ class PlotDecayQtys(object):
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
         range_calendar_list = TimePlotUtils.CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
         range_weeks_list = TimePlotUtils.WeeklyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+        range_qtys_summary_list = []
         for loop_week, loop_days_list in zip(range_weeks_list, range_calendar_list):
-            result_sums = []
-            loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_week, loop_week, True)
+            result_qtys_list = []
             loop_sums = []
+
+            loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_week, loop_week, True)
+
             data_dt_lists = dict()
             data_qty_lists = dict()
             for loop_label in self._data_labels:
                 loop_data_dt_list, loop_data_qty_list = self._ReadQtyScheduleData(loop_files_list, loop_label)
                 data_dt_lists[loop_label] = loop_data_dt_list
                 data_qty_lists[loop_label] = loop_data_qty_list
+
             for loop_day in loop_days_list:
                 loop_day_start, loop_day_end = TimePlotUtils._DayStartAndEndTimes_FromDate(loop_day)
-                _log.debug("loop_day_start=(%s)" % str(loop_day_start))
-                _log.debug("loop_day_end=(%s)" % str(loop_day_end))
                 loop_day_sumqtys = dict()
-                loop_day_sumqty = Decimal(0)
                 for loop_label in self._data_labels:
-                    _log.debug("loop_label=(%s)" % str(loop_label))
+                    loop_day_sumqty = Decimal(0)
                     for loop_dt, loop_qty in zip(data_dt_lists[loop_label], data_qty_lists[loop_label]):
                         #   If loop_dt is within loop_day, add loop_qty to loop_day_sumqty
-                        pass
                         loop_dt.replace(tzinfo=None)
                         if (loop_dt >= loop_day_start) and (loop_dt <= loop_day_end):
                             loop_day_sumqty += loop_qty
-                    _log.debug("loop_day_sumqty=(%s)" % str(loop_day_sumqty))
                     loop_day_sumqtys[loop_label] = loop_day_sumqty
-                result_sums.append(loop_day_sumqtys)
-            self.PlotDaysPerWeek_DecayQtys(loop_days_list, result_sums)
-        return [ range_calendar_list, result_sums ]
+                result_qtys_list.append(loop_day_sumqtys)
+
+            if (len(result_qtys_list) != len(loop_days_list)):
+                raise Exception("mismatch, len(result_qtys_list)=(%s) != len(loop_days_list)=(%s)" % (len(result_qtys_list), len(loop_days_list)))
+
+            result_qtys_dict = {k: [dic[k] for dic in result_qtys_list] for k in self._data_labels}
+            range_qtys_summary_list.append(result_qtys_dict)
+            self.PlotDaysPerWeek_DecayQtys(loop_days_list, result_qtys_dict)
+
+        self.FormatReportDaysPerWeek_DecayQtys_ForDateRange(range_calendar_list, range_qtys_summary_list)
     #   }}}
 
-    from matplotlib import pyplot as plt
+    def FormatReportDaysPerWeek_DecayQtys_ForDateRange(self, arg_calendar_list, arg_qtys_summary_list):
+        _log.debug("arg_calendar_list=(%s)" % pprint.pformat(arg_calendar_list))
+        _log.debug("arg_qtys_summary_list=(%s)" % pprint.pformat(arg_qtys_summary_list))
+        #   Continue: 2021-01-27T23:32:32AEDT For each week in arg_calendar_list, print days with correspondining qtys in table
 
-
+    #   TODO: 2021-01-27T23:14:16AEDT Use different scale for each list in dictionary xvals
     def bar_plot(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
+    #   {{{
         """Draws a bar plot with multiple bars per data point.
         LINK: https://stackoverflow.com/questions/14270391/python-matplotlib-multiple-bars
         Parameters
@@ -208,29 +223,19 @@ class PlotDecayQtys(object):
         plt.xticks(range(len(xvals)), xvals)
         ax.tick_params(axis='x', which='minor', labelsize=4)
         ax.tick_params(axis='x', which='major', labelsize=6)
+    #   }}}
 
-    def PlotDaysPerWeek_DecayQtys(self, arg_days_list, arg_qtys_list):
-        _log.debug("len(arg_days_list)=(%s)" % len(arg_days_list))
-        _log.debug("arg_days_list=(%s)" % str(arg_days_list))
-        _log.debug("len(arg_qtys_list)=(%s)" % len(arg_qtys_list))
-        _log.debug("arg_qtys_list=(%s)" % str(arg_qtys_list))
-
-        v = {k: [dic[k] for dic in arg_qtys_list] for k in arg_qtys_list[0]}
-        _log.debug("v=(%s)" % str(v))
+    def PlotDaysPerWeek_DecayQtys(self, arg_plotdays, arg_plotdata_dict):
+        _log.debug("arg_plotdays=(%s)" % str(arg_plotdays))
+        _log.debug("arg_plotdata_dict=(%s)" % str(arg_plotdata_dict))
 
         fig, ax = plt.subplots()
-        self.bar_plot(ax, arg_days_list, v, total_width=.8, single_width=.9)
-
-        date_first_str = arg_days_list[0]
-
+        self.bar_plot(ax, arg_plotdays, arg_plotdata_dict, total_width=.8, single_width=.9)
+        date_first_str = arg_plotdays[0]
         _path_save = os.path.join(self.plot_save_dir, date_first_str + "-qtyweek" + ".png")
+
         plt.savefig(_path_save)
         plt.close()
-
-
-
-
-
 
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass

@@ -49,7 +49,7 @@ class Test_DecayCalc(unittest.TestCase):
     timeplot = TimePlot()
 
     #   Set True to open output directory in Finder 
-    _flag_openPlots = True
+    _flag_openPlots = False
 
     _tasklog_dir = os.path.join(os.environ.get('mld_tasklogs'), "_worklog")
 
