@@ -94,38 +94,6 @@ class TimePlotUtils:
     #   }}}
 
     @staticmethod
-    def WeeklyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeWeekBefore=False, arg_result_str=True):
-    #   {{{
-        """Get list of weeks between two dates, as either strings or datetimes. Optionally include week before first date. Use Sunday as beginning of week"""
-        if (isinstance(arg_dt_first, str)):
-            arg_dt_first = dateparser.parse(arg_dt_first)
-        if (isinstance(arg_dt_last, str)):
-            arg_dt_last = dateparser.parse(arg_dt_last)
-        arg_dt_first = arg_dt_first.replace(hour=0, minute=0, second=0) - datetime.timedelta(days=arg_dt_first.weekday())
-        arg_dt_last = arg_dt_last.replace(hour=23, minute=59, second=59)
-        if (arg_dt_first > arg_dt_last):
-            raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
-        _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
-        _dt_format_output = '%Y-%m-%d'
-        _dt_freq = 'W'
-        _log.debug("arg_includeWeekBefore=(%s)" % str(arg_includeWeekBefore))
-        if (arg_includeWeekBefore):
-            arg_dt_beforeFirst = arg_dt_first + relativedelta(weeks=-1)
-            #arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
-            arg_dt_first = arg_dt_beforeFirst
-        #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
-        #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
-        dt_Range = [ x.to_pydatetime() for x in pandas.date_range(start=arg_dt_first.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
-        if (arg_result_str):
-            dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
-            _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
-            return dt_Range_str
-        else:
-            _log.debug("dt_Range=(%s)" % str(dt_Range))
-            return dt_Range
-    #   }}}
-
-    @staticmethod
     def MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore=False, arg_result_str=True):
     #   {{{
         """Get list of months between two dates, as either strings or datetimes. Optionally include month before first date."""
@@ -144,6 +112,38 @@ class TimePlotUtils:
         if (arg_includeMonthBefore):
             arg_dt_beforeFirst = arg_dt_first + relativedelta(months=-1)
             arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
+            arg_dt_first = arg_dt_beforeFirst
+        #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
+        #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
+        dt_Range = [ x.to_pydatetime() for x in pandas.date_range(start=arg_dt_first.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
+        if (arg_result_str):
+            dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
+            _log.debug("dt_Range_str=(%s)" % str(dt_Range_str))
+            return dt_Range_str
+        else:
+            _log.debug("dt_Range=(%s)" % str(dt_Range))
+            return dt_Range
+    #   }}}
+
+    @staticmethod
+    def WeeklyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeWeekBefore=False, arg_result_str=True):
+    #   {{{
+        """Get list of weeks between two dates, as either strings or datetimes. Optionally include week before first date. Use Sunday as beginning of week"""
+        if (isinstance(arg_dt_first, str)):
+            arg_dt_first = dateparser.parse(arg_dt_first)
+        if (isinstance(arg_dt_last, str)):
+            arg_dt_last = dateparser.parse(arg_dt_last)
+        arg_dt_first = arg_dt_first.replace(hour=0, minute=0, second=0) - datetime.timedelta(days=arg_dt_first.weekday())
+        arg_dt_last = arg_dt_last.replace(hour=23, minute=59, second=59)
+        if (arg_dt_first > arg_dt_last):
+            raise Exception("Invalid arg_dt_first=(%s) > arg_dt_last=(%s)" % (str(arg_dt_first), str(arg_dt_last)))
+        _dt_format_convertrange = '%Y-%m-%dT%H:%M:%S%Z'
+        _dt_format_output = '%Y-%m-%d'
+        _dt_freq = 'W'
+        _log.debug("arg_includeWeekBefore=(%s)" % str(arg_includeWeekBefore))
+        if (arg_includeWeekBefore):
+            arg_dt_beforeFirst = arg_dt_first + relativedelta(weeks=-1)
+            #arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
             arg_dt_first = arg_dt_beforeFirst
         #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
         #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
