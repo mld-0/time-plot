@@ -121,7 +121,7 @@ class Test_DecayCalc(unittest.TestCase):
         plotdecayqtys.data_file_prefix = self.prefix
         plotdecayqtys.data_file_postfix = self.postfix
         plotdecayqtys.plot_save_dir = self._output_dir
-        plotdecayqtys.PlotDaysPerWeek_DecayQtys_ForDateRange(dt_start, dt_end)
+        plotdecayqtys.PlotDaysPerWeek_DecayQtys_ForDateRange(dt_start, dt_end, False)
         if (self._flag_openPlots):
             webbrowser.open('file:%s' % self._output_dir)
 
@@ -137,6 +137,7 @@ class Test_DecayCalc(unittest.TestCase):
             plotdecayqtys.PlotDaily_DecayQtys_ForDateRange(dt_start, dt_end)
             if (self._flag_openPlots):
                 webbrowser.open('file:%s' % self._output_dir)
+
         def test_PlotDecayQtys_PlotDaily_DecayQtys_ForDateRange(self):
             dt_start = dateparser.parse("2021-01-07T18:18:31AEDT")
             dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")

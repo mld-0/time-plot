@@ -120,7 +120,7 @@ class PlotDecayQtys(object):
         self._PlotResultsItemsForDay(loop_dt_list, loop_qty_lists, self._data_labels, self.plot_save_dir, loop_day + "-decayqty" , self.default_color_options, True)
     #   }}}
 
-    def PlotDaysPerWeek_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
+    def PlotDaysPerWeek_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end, arg_savePlots=True):
     #   {{{
         """Plot schedule item qty totals, for each day between start/end, week-by-week."""
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
@@ -156,17 +156,59 @@ class PlotDecayQtys(object):
             if (len(result_qtys_list) != len(loop_days_list)):
                 raise Exception("mismatch, len(result_qtys_list)=(%s) != len(loop_days_list)=(%s)" % (len(result_qtys_list), len(loop_days_list)))
 
+            #   List of dicts to dict of lists and plot
             result_qtys_dict = {k: [dic[k] for dic in result_qtys_list] for k in self._data_labels}
-            range_qtys_summary_list.append(result_qtys_dict)
-            self.PlotDaysPerWeek_DecayQtys(loop_days_list, result_qtys_dict)
+            range_qtys_summary_list.append(result_qtys_list)
+            if (arg_savePlots):
+                self.PlotDaysPerWeek_DecayQtys(loop_days_list, result_qtys_dict)
 
-        self.FormatReportDaysPerWeek_DecayQtys_ForDateRange(range_calendar_list, range_qtys_summary_list)
+        result_reports, result_sums, result_avgs = self.FormatReportDaysPerWeek_DecayQtys_ForDateRange(range_calendar_list, range_qtys_summary_list)
+        
+        #   Continue: 2021-01-29T20:35:46AEDT Save text summaries result_reports along with plot figures 
+
     #   }}}
 
+
     def FormatReportDaysPerWeek_DecayQtys_ForDateRange(self, arg_calendar_list, arg_qtys_summary_list):
-        _log.debug("arg_calendar_list=(%s)" % pprint.pformat(arg_calendar_list))
-        _log.debug("arg_qtys_summary_list=(%s)" % pprint.pformat(arg_qtys_summary_list))
+    #   {{{
+        """For a list-of-lists (weeks/days), and a corresponding list-of-lists-of-dicts (qtys for each day), produce formatted string summary, as well as sums, and avgs for each dict item (self._data_labels) for each week."""
         #   Continue: 2021-01-27T23:32:32AEDT For each week in arg_calendar_list, print days with correspondining qtys in table
+        result_reports = []
+        result_sums = []
+        result_avgs = []
+
+        for loop_week_days, loop_week_qtys  in zip(arg_calendar_list, arg_qtys_summary_list):
+            weekly_totals_dict = dict.fromkeys(self._data_labels, 0)
+            weekly_avgs_dict = dict.fromkeys(self._data_labels, 0)
+            loop_day_report_str = "%12s (%s, %s)\n" % ("Week:", str(loop_week_days[0]), str(loop_week_days[-1]))
+
+            for loop_day, loop_qtys in zip(loop_week_days, loop_week_qtys):
+                loop_day_report_str += "%-16s" % loop_day
+                for loop_label in self._data_labels:
+                    loop_qty = loop_qtys[loop_label]
+                    weekly_totals_dict[loop_label] += loop_qty
+                    loop_day_report_str += "%-12s%10s\n%16s" % (loop_label, loop_qty, "")
+                loop_day_report_str = loop_day_report_str.strip()
+                loop_day_report_str += "\n"
+
+            loop_day_report_str += "Totals/averages:\n"
+            for loop_label in self._data_labels:
+                loop_total = weekly_totals_dict[loop_label]
+                loop_avg = round(weekly_totals_dict[loop_label] / len(loop_week_qtys), 2)
+                weekly_avgs_dict[loop_label] = loop_avg
+                loop_day_report_str += "%-16s%-12s%10s%10s\n" % ("", loop_label, str(loop_total), str(loop_avg))
+
+            loop_day_report_str = loop_day_report_str.strip()
+            _log.debug("loop_day_report_str:\n%s" % loop_day_report_str)
+            result_reports.append(loop_day_report_str)
+
+            _log.debug("weekly_totals_dict=(%s)" % str(weekly_totals_dict))
+            _log.debug("weekly_avgs_dict=(%s)" % str(weekly_avgs_dict))
+            result_sums.append(weekly_totals_dict)
+            result_avgs.append(weekly_avgs_dict)
+
+        return [ result_reports, result_sums, result_avgs ]
+        #   }}}
 
     #   TODO: 2021-01-27T23:14:16AEDT Use different scale for each list in dictionary xvals
     def bar_plot(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
@@ -397,7 +439,8 @@ class PlotDecayQtys(object):
         if not (arg_output_dir is None):
             _path_save = os.path.join(arg_output_dir, arg_output_fname + ".png")
             plt.savefig(_path_save)
-            plt.close()
+            #   Ongoing: 2021-02-01T22:56:04AEDT closing plt results in closure of caller application (specifically, pulse) upon return of function
+            #plt.close()
             _log.debug("_path_save:\n%s" % str(_path_save))
             return _path_save
         else:
