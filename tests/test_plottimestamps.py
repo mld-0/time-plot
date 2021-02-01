@@ -43,17 +43,13 @@ _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
 logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_logging_datetime)
 
-class Test_DecayCalc(unittest.TestCase):
+class Test_PlotTimeStamps(unittest.TestCase):
 #   {{{
     decaycalc = DecayCalc()
     timeplot = TimePlot()
 
     #   Set True to open output directory in Finder 
-    _flag_openPlots = False
-
-    #_tasklog_dir = os.path.join(os.environ.get('mld_tasklogs'), "_worklog")
-
-    #_dassresults_dir = os.environ.get('mld_dass21_results')
+    _flag_openPlots = True
 
     _pkg_testdata = "tests.data"
     def _getPath_TestData(self, arg_fname):
@@ -72,43 +68,8 @@ class Test_DecayCalc(unittest.TestCase):
         _log.debug("mkdir _output_dir=(%s)" % str(_output_dir))
         os.mkdir(_output_dir)
 
-    #prefix = "Schedule.calc."
-    #postfix = ".vimgpg"
-
-    #_test_postfix = "\n"
-
-    ##day_analyse = dateparser.parse("2021-01-04T00:00:00AEST")
-    #day_analyse = dateparser.parse("2021-01-03")
-
-    #month_analyse = "2021-01"
-
-    #dt_analyse = dateparser.parse("2021-01-03T14:13:42AEST")
-    #dt_start = dateparser.parse("2021-01-01T16:08:18AEST")
-    #dt_end = dateparser.parse("2021-01-02T16:08:18AEST")
-    #label = "D-IR"
-    #label = "Can-S"
-    #col_label = 0
-    #col_qty = 1
-    #col_dt = 3
-    #delim = ","
-    #onset = 20 * 60
-    #halflife = 30 * 60
-
-    #color_options = [ "blue", "green", "red", "black", "orange" ]
-
-    #labels_list = [ "D-IR", "Can-S" ]
-    #halflives_list = [ 45*60, 45*60 ]
-    #onset_lists = [ 20*60, 3*60 ]
-
-    #tasklog_prefix = ""
-    #tasklog_postfix = ".worklog.vimgpg"
-
-    #_dass_prefix = "dass21-results."
-    #_dass_postfix = ".vimgpg"
-
     #   Continue: 2021-01-09T18:10:29AEDT test_AnalyseDataAll
     #   Continue: 2021-01-09T18:12:37AEDT get starttime/timedone from tasklogs, plot alongside data from schedule log file
-
 
 #    if (False):
 #        #   {{{
@@ -126,11 +87,12 @@ class Test_DecayCalc(unittest.TestCase):
     def test_AnalyseVimhSample(self):
         dt_start = dateparser.parse("2021-01-12T18:18:31AEDT")
         dt_end = dateparser.parse("2021-01-17T18:18:52AEDT")
+        split = 300
         _vimh_sample_6day = self._getPath_TestData("vimh-6daysample.txt")
         _log.debug("_vimh_sample_6day=(%s)" % str(_vimh_sample_6day))
         plottimestamps = PlotTimestamps()
         #plottimestamps.data_file_prefix = _vimh_sample_6day
-        plottimestamps.PlotDaily_TimestampSplits_ForDateRange(_vimh_sample_6day, dt_start, dt_end)
+        plottimestamps.PlotDaily_TimestampSplits_ForDateRange(_vimh_sample_6day, dt_start, dt_end, split)
         if (self._flag_openPlots):
             webbrowser.open('file:%s' % self._output_dir)
 

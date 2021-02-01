@@ -42,6 +42,7 @@ logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_loggin
 class PlotTimestamps(object):
     default_color_options = [ 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple', 'tab:red'  ]
     decaycalc = DecayCalc()
+    dtscanner = DTScanner()
 
     plot_save_dir = os.path.join(tempfile.gettempdir(), "PlotDecayQtys")
 
@@ -50,7 +51,7 @@ class PlotTimestamps(object):
     def __init__(self):
         pass
 
-    def PlotDaily_TimestampSplits_ForDateRange(self, path_log, arg_date_start, arg_date_end, arg_restrictFuture=True):
+    def PlotDaily_TimestampSplits_ForDateRange(self, path_log, arg_date_start, arg_date_end, arg_split, arg_restrictFuture=True):
     #   {{{
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
         range_calendar_list = TimePlotUtils.CalendarRange_Monthly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
@@ -59,7 +60,7 @@ class PlotTimestamps(object):
         if (len(range_calendar_list) != len(range_months_list)):
             raise Exception("(len(range_calendar_list)=(%s) != len(range_months_list))=(%s)" % (len(range_calendar_list), len(range_months_list)))
         for loop_month, loop_days_list in zip(range_months_list, range_calendar_list):
-            intervals_list = self._ReadTimestampsSplits(path_log, arg_date_start, arg_date_end)
+            intervals_list = self._ReadTimestampsSplits(path_log, arg_date_start, arg_date_end, arg_split)
             for loop_day in loop_days_list:
                 loop_mins_x, loop_y = self._FillMinuteRangeForDayFromSplits(intervals_list, loop_day)
                 #_log.debug("loop_y=(%s)" % str(loop_y))
@@ -104,19 +105,20 @@ class PlotTimestamps(object):
     #   }}}
 
 
-    def _ReadTimestampsSplits(self, path_log, arg_date_start, arg_date_end):
+    #   Continue: 2021-01-29T20:59:50AEDT replace dtscan cli call with python method call
+    def _ReadTimestampsSplits(self, path_log, arg_date_start, arg_date_end, arg_split):
     #   {{{
-        cmd_splits = [ 'dtscan', '--infile', str(path_log), 'splits', '--qfstart', '"' + str(arg_date_start) + '"', '--qfend', '"' + str(arg_date_end) + '"' ]
-        _log.debug("cmd_splits=(%s)" % str(cmd_splits))
-        p = Popen(cmd_splits, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-        result_data_decrypt, result_stderr = p.communicate()
-        result_str = result_data_decrypt.decode()
-        result_stderr = result_stderr.decode()
-        rc = p.returncode
-        _log.debug("result_str=(%s)" % str(result_str))
-        _log.debug("rc=(%s)" % str(rc))
+        self.dtscanner._scan_qfstart = arg_date_start
+        self.dtscanner._scan_qfend = arg_date_end
+        self.dtscanner._scan_qfinterval = 'd'
+
+        f = open(path_log, "r")
+        result_splits = self.dtscanner.Interface_Splits(f, arg_split, False)
+        _log.debug("result_splits:\n%s" % pprint.pformat(result_splits, width=120))
+        f.close()
         result_splits_list = []
-        for loop_line in result_str.split('\n'):
+
+        for loop_line in result_splits:
             loop_line_split = loop_line.split()
             #_log.debug("loop_line_split=(%s)" % str(loop_line_split))
             try:
