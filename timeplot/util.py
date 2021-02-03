@@ -181,9 +181,9 @@ class TimePlotUtils:
 
     #   TODO: 2021-01-26T11:41:37AEDT Compare sh256 of resulting string to sh256 of decrypted existing file, skip copying if match
     @staticmethod
-    def _CopyData_DivideByMonth(arg_source_path, arg_dest_dir, arg_dest_prefix, arg_dest_postfix, arg_dt_first, arg_dt_last, arg_overwrite=False, arg_includeMonthBefore=False, arg_gpg_key=None):
+    def CopyLogDataFile_DivideByMonth(arg_source_path, arg_dest_dir, arg_dest_prefix, arg_dest_postfix, arg_dt_first, arg_dt_last, arg_overwrite=False, arg_includeMonthBefore=False, arg_gpg_key=None, arg_remove_duplicate_lines=True):
     #   {{{
-        """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month. Optionally encrypt data with system gpg."""
+        """Copy lines from single source file arg_source_path to file(s) in arg_dest_dir, for range of months, copying lines containing given month to destination file for said month. Optionally encrypt data with system gpg. If arg_remove_duplicate_lines is True, do not copy any lines that are duplicates of those already seen during copying."""
         _starttime = datetime.datetime.now()
         dt_Range_str = TimePlotUtils.MonthlyDateRange_FromFirstAndLast(arg_dt_first, arg_dt_last, arg_includeMonthBefore, True)
         for loop_dt_str in dt_Range_str:
@@ -193,6 +193,11 @@ class TimePlotUtils:
                     loop_line = loop_line.strip()
                     #   If loop_line contains loop_dt_str, append it to loop_data
                     if not loop_line.find(loop_dt_str) == -1:
+                        if (arg_remove_duplicate_lines):
+                            loop_data_lineslist = loop_data.split('\n')
+                            if loop_line in loop_data_lineslist:
+                                _log.debug("skip duplicate, loop_line=(%s)" % str(loop_line))
+                                continue
                         loop_data += loop_line + '\n'
             _log.debug("loop_dt_str=(%s) lines(loop_data)=(%s)" % (str(loop_dt_str), len(loop_data.split('\n'))))
             loop_dest_filename = arg_dest_prefix + loop_dt_str + arg_dest_postfix
