@@ -125,13 +125,18 @@ class PlotDecayQtys(object):
         """Plot schedule item qty totals, for each day between start/end, week-by-week."""
         _log.debug("arg_date_start=(%s), arg_date_end=(%s)" % (str(arg_date_start), str(arg_date_end)))
         range_calendar_list = TimePlotUtils.CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_date_start, arg_date_end)
-        range_weeks_list = TimePlotUtils.WeeklyDateRange_FromFirstAndLast(arg_date_start, arg_date_end)
+
         range_qtys_summary_list = []
-        for loop_week, loop_days_list in zip(range_weeks_list, range_calendar_list):
+        for loop_days_list in range_calendar_list:
+            _log.debug("loop_days_list=(%s)" % str(loop_days_list))
             result_qtys_list = []
             loop_sums = []
 
-            loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_week, loop_week, True)
+            loop_day_first = loop_days_list[0]
+            loop_day_last = loop_days_list[-1]
+
+
+            loop_files_list = TimePlotUtils._GetFiles_FromMonthlyRange(self.data_file_dir, self.data_file_prefix, self.data_file_postfix, loop_day_first, loop_day_last, True)
 
             data_dt_lists = dict()
             data_qty_lists = dict()
@@ -141,6 +146,7 @@ class PlotDecayQtys(object):
                 data_qty_lists[loop_label] = loop_data_qty_list
 
             for loop_day in loop_days_list:
+
                 loop_day_start, loop_day_end = TimePlotUtils._DayStartAndEndTimes_FromDate(loop_day)
                 loop_day_sumqtys = dict()
                 for loop_label in self._data_labels:
@@ -210,8 +216,19 @@ class PlotDecayQtys(object):
         return [ result_reports, result_sums, result_avgs ]
         #   }}}
 
+    #   TODO: 2021-02-05T19:22:31AEDT format x-axis dates to be readable (not overlapping)
+    def bar_plot_stacked(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
+        for loop_i, (loop_data_keys, loop_data_item) in enumerate(zip(data.keys(), data.values())):
+            y = loop_data_item
+            plt.subplot(2, 1, loop_i+1)
+            _log.debug("xvals=(%s)" % str(xvals))
+            _log.debug("y=(%s)" % str(y))
+            plt.title(loop_data_keys)
+            plt.bar(xvals, y)
+            
+
     #   TODO: 2021-01-27T23:14:16AEDT Use different scale for each list in dictionary xvals
-    def bar_plot(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
+    def bar_plot_multiple(self, ax, xvals, data, colors=None, total_width=0.8, single_width=1, legend=True):
     #   {{{
         """Draws a bar plot with multiple bars per data point.
         LINK: https://stackoverflow.com/questions/14270391/python-matplotlib-multiple-bars
@@ -272,10 +289,11 @@ class PlotDecayQtys(object):
         _log.debug("arg_plotdata_dict=(%s)" % str(arg_plotdata_dict))
 
         fig, ax = plt.subplots()
-        self.bar_plot(ax, arg_plotdays, arg_plotdata_dict, total_width=.8, single_width=.9)
+        self.bar_plot_stacked(ax, arg_plotdays, arg_plotdata_dict, total_width=.8, single_width=.9)
         date_first_str = arg_plotdays[0]
         _path_save = os.path.join(self.plot_save_dir, date_first_str + "-qtyweek" + ".png")
 
+        fig.tight_layout()
         plt.savefig(_path_save)
         plt.close()
 

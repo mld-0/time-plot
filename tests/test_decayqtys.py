@@ -49,7 +49,7 @@ class Test_DecayCalc(unittest.TestCase):
     timeplot = TimePlot()
 
     #   Set True to open output directory in Finder 
-    _flag_openPlots = False
+    _flag_openPlots = True
 
     _tasklog_dir = os.path.join(os.environ.get('mld_tasklogs'), "_worklog")
 
@@ -115,13 +115,13 @@ class Test_DecayCalc(unittest.TestCase):
 
     def test_PlotDaysPerWeek_DecayQtys_ForDateRange(self):
         dt_start = dateparser.parse("2020-11-10T18:18:31AEDT")
-        dt_end = dateparser.parse("2021-01-18T18:18:52AEDT")
+        dt_end = dateparser.parse("2021-02-05T18:18:52AEDT")
         plotdecayqtys = PlotDecayQtys()
         plotdecayqtys.data_file_dir = self._data_dir_schedule
         plotdecayqtys.data_file_prefix = self.prefix
         plotdecayqtys.data_file_postfix = self.postfix
         plotdecayqtys.plot_save_dir = self._output_dir
-        plotdecayqtys.PlotDaysPerWeek_DecayQtys_ForDateRange(dt_start, dt_end, False)
+        plotdecayqtys.PlotDaysPerWeek_DecayQtys_ForDateRange(dt_start, dt_end, True)
         if (self._flag_openPlots):
             webbrowser.open('file:%s' % self._output_dir)
 

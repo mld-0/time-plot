@@ -64,10 +64,11 @@ class TimePlotUtils:
         return calendar_list
     #   }}}
 
+    #   TODO: 2021-02-05T19:18:07AEDT require that week begins on given day?
     @staticmethod
-    def CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True):
+    def CalendarRange_Weekly_DateRangeFromFirstAndLast(arg_dt_first, arg_dt_last, arg_result_str=True, arg_expandToFullWeek=True):
     #   {{{
-        """Return list of lists 'calendar list', with one list for each month, containing the days of that month falling inside specified date range"""
+        """Return list of lists 'calendar list', with one list for each month, containing the days of that month falling inside specified date range. If arg_result_str, return dates-as-strings. If arg_expandToFullWeek, extend first/last week by as many days before/after first/last date such that the week is 7 days"""
         if (isinstance(arg_dt_first, str)):
             arg_dt_first = dateparser.parse(arg_dt_first)
         if (isinstance(arg_dt_last, str)):
@@ -84,7 +85,7 @@ class TimePlotUtils:
             #_log.debug("loop_days_list=(%s)" % str(loop_days_list))
             loop_month_list = []
             for loop_day in loop_days_list:
-                if (loop_day >= arg_dt_first) and (loop_day <= arg_dt_last):
+                if (arg_expandToFullWeek) or (loop_day >= arg_dt_first) and (loop_day <= arg_dt_last):
                     if (arg_result_str):
                         loop_day = loop_day.strftime(_dt_format_output)
                     loop_month_list.append(loop_day)
@@ -145,8 +146,8 @@ class TimePlotUtils:
             arg_dt_beforeFirst = arg_dt_first + relativedelta(weeks=-1)
             #arg_dt_beforeFirst = arg_dt_beforeFirst.replace(day=1)
             arg_dt_first = arg_dt_beforeFirst
-        #_log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
-        #_log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
+        _log.debug("arg_dt_first=(%s)" % str(arg_dt_first))
+        _log.debug("arg_dt_last=(%s)" % str(arg_dt_last))
         dt_Range = [ x.to_pydatetime() for x in pandas.date_range(start=arg_dt_first.strftime(_dt_format_convertrange), end=arg_dt_last.strftime(_dt_format_convertrange), freq=_dt_freq) ]
         if (arg_result_str):
             dt_Range_str = [ x.strftime(_dt_format_output) for x in dt_Range ]
