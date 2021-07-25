@@ -28,6 +28,9 @@ from matplotlib.dates import DateFormatter
 import multiprocessing
 from timeplot.util import TimePlotUtils
 #   {{{2
+
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
@@ -92,8 +95,9 @@ class DecayCalc(object):
 
     def CalculateAtDT(self, arg_dt, arg_dt_items, arg_qty_items, arg_halflife, arg_onset):
     #   {{{
-        """given lists arg_qty_items/arg_dt_items, (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
+        """given lists arg_qty_items/arg_dt_items (read using timeplot.schedulereader.ReadItemData), (assuming expodential decay of arg_halflife and linear onset of arg_onset), find the qty remaining at arg_dt"""
         _startime = datetime.datetime.now()
+        _log.debug(f"arg_dt=({arg_dt})")
         result_qty = Decimal(0.0)
         for loop_dt, loop_qty in zip(arg_dt_items, arg_qty_items):
             #   Reconcile timezones 
@@ -105,16 +109,24 @@ class DecayCalc(object):
             #   }}}
             #   get difference between arg_dt and loop_dt in seconds
             loop_delta_s = (arg_dt - loop_dt).total_seconds()
+            if (loop_delta_s > arg_halflife * self.threshold_halflife_count):
+                continue
             loop_result_qty = Decimal(0.0)
             if (loop_delta_s > arg_onset) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
                 loop_hl_fraction = (loop_delta_s - arg_onset) / arg_halflife
                 loop_result_qty = loop_qty * Decimal(0.5) ** Decimal(loop_hl_fraction)
             elif (loop_delta_s > 0) and (loop_delta_s < arg_halflife * self.threshold_halflife_count):
                 loop_result_qty = loop_qty * Decimal(loop_delta_s / arg_onset)
+
+            #if (loop_result_qty > 0):
+            #    _log.debug(f"loop_delta_s=({loop_delta_s})")
+            #    _log.debug(f"loop_qty=({loop_qty})")
+            #    _log.debug(f"loop_result_qty=({loop_result_qty})")
+
             result_qty += loop_result_qty
         _timedone = datetime.datetime.now()
         _elapsed = _timedone - _startime
-        #_log.debug("_elapsed=(%s)" % str(_elapsed))
+        _log.debug("_elapsed=(%s)" % str(_elapsed))
         return result_qty
     #   }}}
 

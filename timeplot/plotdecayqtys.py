@@ -300,6 +300,7 @@ class PlotDecayQtys(object):
     def PlotWeeksPerYear_DecayQtys_ForDateRange(self, arg_date_start, arg_date_end):
         pass
 
+    #   Deprecated: 2021-03-12T16:50:47AEDT use timeplot.schedulereader.ReadItemData
     def _ReadQtyScheduleData(self, arg_files_list, arg_label, arg_filter_dates=None):
     #   {{{
         """Given a list of files, get as lists qtys and datetimes (from columns self.data_column_qty and self.data_column_dt, columns defined by self.data_delim), for lines where value in column self.data_column_label==arg_label (if arg_label is None, read every line). If arg_filter_dates is not None, exclude datetime string candidates not found in list. Return list of lists [ results_dt, results_qty ]"""

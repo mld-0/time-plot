@@ -12,6 +12,7 @@ import dateutil.parser
 from decimal import Decimal
 from subprocess import Popen, PIPE, STDOUT
 #   {{{2
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 _log = logging.getLogger('decaycalc')
 _logging_format="%(funcName)s: %(levelname)s, %(message)s"
@@ -28,6 +29,8 @@ class ScheduleReader(object):
     col_label = 0
     col_qty = 1
     col_delim = ','
+
+    flag_assume_tz = True
 
     def _GPGDecryptFileToString(self, arg_path_file):
     #   {{{
@@ -106,7 +109,10 @@ class ScheduleReader(object):
                     loop_datetime_str = loop_line_split[self.col_datetimes]
                     loop_datetime_str = self._Fix_DTS_DatetimeStr(loop_datetime_str)
                     #   TODO: 2021-03-12T17:08:57AEDT attempt parse with faster method first
+
                     loop_datetime = dateutil.parser.parse(loop_datetime_str)
+                    #if (self.flag_assume_tz is True) and (loop_datetime.tzinfo is None):
+                    #    loop_datetime = loop_datetime.replace(tzinfo = datetime.datetime.now().astimezone().tzinfo)
 
                     results_datetime.append(loop_datetime)
                     results_qty.append(loop_qty)

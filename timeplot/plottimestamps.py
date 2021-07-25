@@ -113,7 +113,7 @@ class PlotTimestamps(object):
         self.dtscanner._scan_qfinterval = 'd'
 
         f = open(path_log, "r")
-        result_splits = self.dtscanner.Interface_Splits(f, arg_split, False)
+        result_splits = self.dtscanner.splits(f, arg_split, False)
         _log.debug("result_splits:\n%s" % pprint.pformat(result_splits, width=120))
         f.close()
         result_splits_list = []
