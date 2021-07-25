@@ -41,6 +41,7 @@ setup(
     description="Plotting <various> involving passage of time per day/week",
     long_description=long_descr,
     packages = ['timeplot', 'tests'],
+    package_data = { 'timeplot': ['*.txt'] },
     install_requires=install_depend,
     tests_require=test_depend,
     entry_points={
