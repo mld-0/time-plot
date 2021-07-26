@@ -19,6 +19,8 @@ _logging_format="%(funcName)s: %(levelname)s, %(message)s"
 _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
 logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_logging_datetime)
 
+logging.getLogger('decaycalc').setLevel(logging.DEBUG)
+
 class ScheduleReader(object):
 
     data_file_dir = os.environ.get('mld_logs_pulse')

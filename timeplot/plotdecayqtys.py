@@ -41,6 +41,8 @@ _logging_datetime="%Y-%m-%dT%H:%M:%S%Z"
 logging.basicConfig(level=logging.DEBUG, format=_logging_format, datefmt=_logging_datetime)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
+logging.getLogger('decaycalc').setLevel(logging.DEBUG)
+
 class PlotDecayQtys(object):
     default_color_options = [ 'tab:blue', 'tab:green', 'tab:orange', 'tab:purple', 'tab:red'  ]
     decaycalc = DecayCalc()
